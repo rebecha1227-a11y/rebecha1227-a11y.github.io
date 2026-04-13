@@ -1,0 +1,198 @@
+/* iMessage-style bubble CSS adapted for this web app */
+
+#cv-hdr{
+  background:#fff !important;
+  border-bottom:0.5px solid #f4f4f6 !important;
+  box-shadow:0 2px 10px rgba(0,0,0,.05) !important;
+  min-height:96px !important;
+  padding-top:max(18px, env(safe-area-inset-top)) !important;
+  padding-bottom:10px !important;
+  justify-content:center !important;
+  position:relative !important;
+}
+
+#cv-back{
+  position:absolute !important;
+  left:10px !important;
+  top:calc(max(18px, env(safe-area-inset-top)) + 10px) !important;
+  color:#007aff !important;
+  font-size:20px !important;
+  z-index:3 !important;
+}
+
+#cv-more{
+  position:absolute !important;
+  right:10px !important;
+  top:calc(max(18px, env(safe-area-inset-top)) + 8px) !important;
+  color:#007aff !important;
+  font-size:18px !important;
+  z-index:3 !important;
+}
+
+#cv-av{
+  position:absolute !important;
+  top:calc(max(18px, env(safe-area-inset-top)) + 2px) !important;
+  left:50% !important;
+  transform:translateX(-50%) !important;
+  width:38px !important;
+  height:38px !important;
+  border-radius:50% !important;
+  border:none !important;
+  box-shadow:none !important;
+  background:#d9d9de !important;
+  z-index:2 !important;
+}
+
+#cv-av img{
+  border-radius:50% !important;
+}
+
+#cv-info{
+  width:100% !important;
+  padding-top:38px !important;
+  text-align:center !important;
+}
+
+#cv-name{
+  color:#000 !important;
+  font-weight:600 !important;
+  font-size:16px !important;
+}
+
+#cv-status{
+  color:#8e8e93 !important;
+  font-size:11px !important;
+}
+
+#cv-msgs{
+  background:#f2f2f7 !important;
+}
+
+#cv-inp{
+  background:#fff !important;
+  border-top:0.5px solid #e5e5ea !important;
+  box-shadow:0 -2px 8px rgba(0,0,0,.06) !important;
+  gap:8px !important;
+  padding:8px 10px calc(8px + var(--sb)) !important;
+}
+
+#inp-wrap{
+  background:#fff !important;
+  border:1px solid #e5e5ea !important;
+  border-radius:22px !important;
+  box-shadow:none !important;
+  min-height:42px !important;
+  padding:7px 12px !important;
+  gap:8px !important;
+}
+
+#user-input{
+  color:#000 !important;
+  font-size:15px !important;
+  line-height:1.45 !important;
+}
+
+#send-btn{
+  width:34px !important;
+  height:34px !important;
+  border-radius:50% !important;
+  background:#007aff !important;
+  box-shadow:none !important;
+  font-size:15px !important;
+}
+
+.iab{
+  color:#007aff !important;
+  font-size:19px !important;
+  width:22px !important;
+  height:22px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+
+.mav{
+  display:none !important;
+}
+
+.mrow{
+  gap:6px !important;
+}
+
+.mrow.user .bubble{
+  background:#007aff !important;
+  color:#fff !important;
+  border-radius:18px !important;
+  border-bottom-right-radius:4px !important;
+  box-shadow:none !important;
+  padding:6px 12px !important;
+  font-size:12px !important;
+  line-height:1.45 !important;
+}
+
+.mrow.user .bubble::after{
+  background:#007aff !important;
+  right:-5px !important;
+  width:10px !important;
+  height:10px !important;
+}
+
+.mrow.assistant .bubble{
+  background:#e5e5ea !important;
+  color:#000 !important;
+  border-radius:18px !important;
+  border-bottom-left-radius:4px !important;
+  border:none !important;
+  box-shadow:none !important;
+  padding:6px 12px !important;
+  font-size:12px !important;
+  line-height:1.45 !important;
+}
+
+.mrow.assistant .bubble::after{
+  background:#e5e5ea !important;
+  left:-5px !important;
+  width:10px !important;
+  height:10px !important;
+}
+
+.btime,
+.rst{
+  color:#8e8e93 !important;
+}
+
+.quote-chip{
+  background:rgba(120,120,128,.12) !important;
+  border-left:3px solid rgba(120,120,128,.35) !important;
+  color:#5c6270 !important;
+  border-radius:10px !important;
+  padding:7px 10px !important;
+  margin-bottom:6px !important;
+}
+
+.quote-chip .qwho{
+  color:#7a8090 !important;
+  font-size:11px !important;
+  font-weight:600 !important;
+}
+
+.think-blk{
+  background:#f2f2f7 !important;
+  border:1px solid #d9d9de !important;
+}
+
+.think-tog,
+.think-cnt,
+.typ-lbl{
+  color:#6b7280 !important;
+}
+
+#typ-ind .typ-bub{
+  background:#e5e5ea !important;
+  border:none !important;
+  box-shadow:none !important;
+}
+
+#typ-ind .typ-bub::after{
+  background:#e5e5ea !important;
+}
