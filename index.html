@@ -2190,7 +2190,7 @@ function splitIntoChunksByLength(raw,minParts,maxParts){
 }
 function sanitizeAssistantChunkText(text){
   return String(text||'')
-    .replace(/<\s*\/?\s*next[\s_-]*message\s*>/ig,' ')
+    .replace(/<\s*\/?\s*next(?:[\s_-]*(?:msg|message))\s*\/?\s*>/ig,' ')
     .replace(/\n{3,}/g,'\n\n')
     .trim();
 }
@@ -2198,9 +2198,9 @@ function splitAssistantMessages(content,chat,opts={}){
   const raw=String(content||'').trim();
   if(!raw)return[];
   if(opts.forceSingle)return[sanitizeAssistantChunkText(raw)].filter(Boolean);
-  const splitReg=/<\s*\/?\s*next[\s_-]*message\s*>/i;
+  const splitReg=/<\s*\/?\s*next(?:[\s_-]*(?:msg|message))\s*\/?\s*>/i;
   if(splitReg.test(raw)){
-    return raw.split(/<\s*\/?\s*next[\s_-]*message\s*>/ig).map(s=>sanitizeAssistantChunkText(s)).filter(Boolean).slice(0,5);
+    return raw.split(/<\s*\/?\s*next(?:[\s_-]*(?:msg|message))\s*\/?\s*>/ig).map(s=>sanitizeAssistantChunkText(s)).filter(Boolean).slice(0,5);
   }
   const paraParts=raw.split(/\n{2,}/).map(s=>s.trim()).filter(Boolean);
   if(paraParts.length>=2)return paraParts.slice(0,5);
