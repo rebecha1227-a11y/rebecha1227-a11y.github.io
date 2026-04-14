@@ -850,18 +850,23 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
         <button class="tbtn" onclick="swTab('gs','prompt')">📝 提示词</button>
       </div>
       <div class="tpanel on" id="gs-tab-api">
-        <div class="fg"><label class="fl">DeepSeek API Key</label>
+        <div class="fg"><label class="fl">API Key</label>
           <div class="akwrap"><input class="fi" type="password" id="ak-inp" placeholder="sk-..."><button class="aktog" onclick="togAK()">👁</button></div>
           <div class="fhint">默认仅存本机。若你在「云端同步」登录 Supabase，整包数据会同步到你的云端（含 Key，仅你的账号可读写）🔒</div>
         </div>
         <div class="fg"><label class="fl">API Base URL</label><input class="fi" type="text" id="ab-inp" value="https://api.deepseek.com/v1"></div>
+        <div class="fg">
+          <button class="btn btn-s" type="button" onclick="fetchModelsByCurrentInputs(false)" style="width:100%">🔄 获取模型列表</button>
+          <div class="fhint" id="model-fetch-status">填写 API Key 和 Base URL 后，将自动拉取模型。接口需兼容 OpenAI `/models`。</div>
+        </div>
       </div>
       <div class="tpanel" id="gs-tab-model">
         <div class="fg"><label class="fl">模型</label>
-          <select class="fsel" id="mod-sel">
-            <option value="deepseek-reasoner">deepseek-reasoner（推理·有思考）</option>
-            <option value="deepseek-chat">deepseek-chat（对话·更快）</option>
-          </select>
+          <select class="fsel" id="mod-sel"></select>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <input class="fi" type="text" id="mod-manual" placeholder="手动输入模型名，例如：gpt-4.1-mini">
+            <button class="btn btn-s" type="button" onclick="applyManualModel()">使用</button>
+          </div>
         </div>
         <div class="fg"><label class="fl">Temperature <span id="tv" style="color:var(--pk);margin-left:5px">1.0</span></label>
           <input type="range" min="0" max="2" step="0.1" id="t-inp" value="1" oninput="document.getElementById('tv').textContent=parseFloat(this.value).toFixed(1)" style="width:100%;accent-color:var(--pk)">
@@ -1225,7 +1230,7 @@ let S = {
   chats:{},   // { charId: {messages,systemPrompt,useMem,autoSum,sumTrig,sumStyle,chatMem,lastSumAt,bubbleStyle,customCSS,chatBg,typingTxt,pokeTxt,showUserAvatar,showAssistantAvatar,showStatus,statusText,allowMultiMsg,autoMsgEnabled,autoMsgEvery,autoMsgUnit,timelineMode,virtualTimeLabel,realTimeResumeMode} }
   chars:{},   // { id: {id,name,remark,sig,emoji,avatarImg,coverImg,nickname,persona,personalities,style,group,createdAt} }
   currentChatId:null,  // = charId
-  settings:{apiKey:'',apiBase:'https://api.deepseek.com/v1',model:'deepseek-reasoner',globalSP:'',temperature:1,maxTokens:4096,fontSize:16,bubFrom:'#FF6B9D',bubTo:'#FF9AC3',wallpaper:'default',customWP:null,globalBubble:'default',contactExtraGroups:[],bubblePresets:[]},
+  settings:{apiKey:'',apiBase:'https://api.deepseek.com/v1',model:'deepseek-reasoner',modelOptions:['deepseek-reasoner','deepseek-chat'],globalSP:'',temperature:1,maxTokens:4096,fontSize:16,bubFrom:'#FF6B9D',bubTo:'#FF9AC3',wallpaper:'default',customWP:null,globalBubble:'default',contactExtraGroups:[],bubblePresets:[]},
   memory:'',
   together:{startDate:null,anniversaries:[]},
   moments:[],     // [{id,author,authorId,text,photos,loc,at,perm,ts,likes,comments}]
@@ -1255,6 +1260,10 @@ let _cloudTimer = null;
 let _cloudSyncing = false;
 let _autoMsgLoop = null;
 let _autoMsgRunning = false;
+let _modelFetchTimer = null;
+let _modelFetchLock = false;
+let _lastModelFetchSignature = '';
+const DEFAULT_MODEL_OPTIONS = ['deepseek-reasoner','deepseek-chat','gpt-4.1-mini','gpt-4o-mini'];
 
 function genId(prefix){
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
@@ -1457,6 +1466,9 @@ async function init(){
   if(tag)tag.textContent=S.settings.globalCustomCSS||'';
   applyMyProfile();
   updTogDayPreview();
+  ensureModelUIReady();
+  bindModelInputsOnce();
+  if(S.settings.apiKey&&S.settings.apiBase)queueModelFetch(true,260);
   refreshCloudUI();
   document.getElementById('user-input').addEventListener('input',function(){
     document.getElementById('send-btn').disabled=this.value.trim()==='';
@@ -2025,6 +2037,20 @@ function removeFavoriteAndRefresh(chatId,msgId){
 // ============================================================
 // SEND
 // ============================================================
+function getBeijingNowParts(ts=Date.now()){
+  const now=new Date(ts);
+  const full=now.toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false});
+  const date=now.toLocaleDateString('zh-CN',{timeZone:'Asia/Shanghai',year:'numeric',month:'long',day:'numeric',weekday:'long'});
+  const time=now.toLocaleTimeString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const h=parseInt(now.toLocaleTimeString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false,hour:'2-digit'}),10)||0;
+  const period=h<6?'凌晨':h<12?'早上':h<14?'中午':h<18?'下午':'晚上';
+  return{full,date,time,period};
+}
+function buildRealtimeLocalReply(){
+  const t=getBeijingNowParts();
+  return `现在是北京时间 ${t.full}（${t.date}，${t.period}${t.time}）。`;
+}
+
 async function sendMsg(){
   if(S.streaming||!S.currentChatId)return;
   const inp=document.getElementById('user-input');
@@ -2038,6 +2064,23 @@ async function sendMsg(){
   if(draft){um.quoteText=draft.text;um.quoteAuthor=draft.author;}
   chat.messages.push(um);renderMsgs();showTyping(true);S.streaming=true;
   clearQuoteDraft();
+  if(chat.timelineMode==='real'&&isRealTimeQuestion(text)){
+    try{
+      await new Promise(r=>setTimeout(r,220+Math.random()*260));
+      um.read=true;
+      await appendAssistantResponse(S.currentChatId,chat,{content:buildRealtimeLocalReply(),thinking:null},{source:'time-local',forceSingle:true});
+      if(chat.autoSum) await checkAutoSum(chat);
+      if(!save())toast('⚠️ 本条回复已显示，但未能写入本地（存储空间不足）。请勿刷新页面，先导出备份或按提示清理后再发消息。');
+      renderMsgs();renderChatList();
+    }catch(err){
+      chat.messages.pop();
+      toast('❌ '+err.message);
+      renderMsgs();
+    }finally{
+      showTyping(false);S.streaming=false;
+    }
+    return;
+  }
   try{
     const res=await callChatAPI(S.currentChatId,chat);
     um.read=true;
@@ -2056,23 +2099,22 @@ async function sendMsg(){
 }
 
 function getTimelinePrompt(chat,nowTs,purpose){
-  const now=new Date(nowTs||Date.now());
-  const bj=now.toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false});
-  const bjTime=now.toLocaleTimeString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false,hour:'2-digit',minute:'2-digit'});
-  const bjDate=now.toLocaleDateString('zh-CN',{timeZone:'Asia/Shanghai',year:'numeric',month:'long',day:'numeric',weekday:'long'});
+  const t=getBeijingNowParts(nowTs||Date.now());
   const lastUser=[...(chat.messages||[])].reverse().find(m=>m.role==='user');
   const gapMin=lastUser?Math.max(0,Math.floor((Date.now()-(lastUser.timestamp||Date.now()))/60000)):0;
   if(chat.timelineMode==='virtual'){
     return `【时间线模式】虚拟时间线。当前剧情时间段：${chat.virtualTimeLabel||'晚上'}。无论现实中过去多久，都默认继续之前的剧情与上下文，不要因为现实时间变化擅自跳到新的时间点，除非用户明确提出。`;
   }
-  let out=`【时间线模式】现实时间线。你与用户处于同一个现实世界。当前准确北京时间为 ${bj}；其中日期是 ${bjDate}，时间是 ${bjTime}。如果用户问“现在几点”“现在什么时候”“今天几号”“星期几”“早上还是晚上”等现实时间问题，你必须直接按这里给出的真实北京时间回答，不能使用虚构剧情时间，不能说错时段。`;
+  let out=`【时间线模式】现实时间线。你与用户处于同一个现实世界。当前准确北京时间为 ${t.full}；其中日期是 ${t.date}，时间是 ${t.time}。如果用户问“现在几点”“现在什么时候”“今天几号”“星期几”“早上还是晚上”等现实时间问题，你必须直接按这里给出的真实北京时间回答，不能使用虚构剧情时间，不能说错时段。`;
   if(purpose==='auto')out+=' 这是你在用户暂时没回复时主动发出的消息，内容必须符合此刻现实时间段。';
-  else if(gapMin>=45)out+=chat.realTimeResumeMode==='continue'?' 用户隔了一段现实时间后回来时，请优先继续之前的剧情和上下文。':' 用户隔了一段现实时间后回来时，请按当前现实时间自然衔接，也可以轻微体现时间流逝。';
+  else if(gapMin>=30)out+=chat.realTimeResumeMode==='continue'
+    ? ' 用户隔了一段现实时间后回来时，请优先继续之前的剧情和上下文。'
+    : ` 用户隔了一段现实时间后回来时，请按当前现实时间自然衔接。你可直接提到“现在是${t.period}${t.time}”。`;
   return out;
 }
 function isRealTimeQuestion(text){
   const s=String(text||'');
-  return /现在几点|几点了|几点啦|几点啊|什么时间|什么时候|今天几号|今天多少号|几月几号|星期几|周几|礼拜几|早上还是晚上|现在是早上|现在是晚上|当前时间/.test(s);
+  return /(现在|当前|此刻|目前).{0,8}(几点|时间|日期|几号|星期|周几|礼拜几)|现在几点|几点了|几点啦|几点啊|什么时间|什么时候|今天几号|今天多少号|几月几号|星期几|周几|礼拜几|早上还是晚上|现在是早上|现在是晚上|当前时间|北京时间/.test(s);
 }
 function buildSystemPrompt(charId,chat,purpose){
   const{apiKey,apiBase,model,globalSP,temperature,maxTokens}=S.settings;
@@ -2103,9 +2145,15 @@ async function callChatAPI(charId,chat,customPrompt,purpose='reply'){
   const msgs=[{role:'system',content:sp},...hist];
   if(customPrompt)msgs.push({role:'user',content:customPrompt});
   const latestUserText=customPrompt||[...(chat.messages||[])].reverse().find(m=>m.role==='user'&&!m.recalled)?.content||'';
+  const lastUser=[...(chat.messages||[])].reverse().find(m=>m.role==='user'&&!m.recalled);
+  const gapMin=lastUser?Math.max(0,Math.floor((Date.now()-(lastUser.timestamp||Date.now()))/60000)):0;
+  if(chat.timelineMode==='real'&&chat.realTimeResumeMode==='current'&&gapMin>=30){
+    const t=getBeijingNowParts();
+    msgs.push({role:'system',content:`系统校时：现在是北京时间 ${t.full}。与上一条用户消息已间隔约 ${gapMin} 分钟，请按当前现实时间衔接，不要停留在旧剧情时点。`});
+  }
   if(chat.timelineMode==='real'&&isRealTimeQuestion(latestUserText)){
-    const now=new Date();
-    const exact=`当前准确北京时间：${now.toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false})}。请直接根据这个真实时间回答用户，不要延伸到虚构剧情时间。`;
+    const t=getBeijingNowParts();
+    const exact=`当前准确北京时间：${t.full}。请直接根据这个真实时间回答用户，不要延伸到虚构剧情时间。`;
     msgs.push({role:'system',content:exact});
   }
   const resp=await fetch(`${apiBase}/chat/completions`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model,messages:msgs,temperature:parseFloat(temperature)||1,max_tokens:parseInt(maxTokens)||4096,stream:false})});
@@ -2150,16 +2198,26 @@ function splitIntoChunksByLength(raw,minParts,maxParts){
   if(last)out.push(last);
   return out.filter(Boolean).slice(0,maxParts);
 }
+function sanitizeAssistantChunkText(text){
+  return String(text||'')
+    .replace(/<\s*\/?\s*next[\s_-]*message\s*>/ig,' ')
+    .replace(/\n{3,}/g,'\n\n')
+    .trim();
+}
 function splitAssistantMessages(content,chat,opts={}){
   const raw=String(content||'').trim();
   if(!raw)return[];
-  if(raw.includes('<NEXT_MSG>'))return raw.split('<NEXT_MSG>').map(s=>s.trim()).filter(Boolean).slice(0,5);
+  if(opts.forceSingle)return[sanitizeAssistantChunkText(raw)].filter(Boolean);
+  const splitReg=/<\s*\/?\s*next[\s_-]*message\s*>/i;
+  if(splitReg.test(raw)){
+    return raw.split(/<\s*\/?\s*next[\s_-]*message\s*>/ig).map(s=>sanitizeAssistantChunkText(s)).filter(Boolean).slice(0,5);
+  }
   const paraParts=raw.split(/\n{2,}/).map(s=>s.trim()).filter(Boolean);
   if(paraParts.length>=2)return paraParts.slice(0,5);
   if(chat?.allowMultiMsg&&opts.source==='reply'){
     if(raw.length>=14)return splitIntoChunksByLength(raw,2,5);
   }
-  return [raw];
+  return [sanitizeAssistantChunkText(raw)];
 }
 async function appendAssistantResponse(charId,chat,res,opts={}){
   const parts=splitAssistantMessages(res.content,chat,opts);
@@ -2168,7 +2226,7 @@ async function appendAssistantResponse(charId,chat,res,opts={}){
     chat.messages.push({
       id:genId('msg'),
       role:'assistant',
-      content:parts[i],
+      content:sanitizeAssistantChunkText(parts[i]),
       thinking:i===0?(res.thinking||null):null,
       timestamp:Date.now()+i,
       read:true,
@@ -3056,10 +3114,21 @@ function extractAPIChoiceText(ch){
   const b=String(msg.reasoning_content||msg.reasoning||'').trim();
   return a||b||'';
 }
+function resolveShortTaskModel(){
+  const selected=String(S.settings.model||'').trim();
+  const known=uniqModelList([selected,...(S.settings.modelOptions||[]),...getModelOptionsFromSelect()]);
+  if(!known.length)return selected||'deepseek-chat';
+  const pref=[];
+  if(selected)pref.push(selected);
+  if(selected&&/reasoner/i.test(selected))pref.push(selected.replace(/reasoner/ig,'chat'));
+  pref.push(...known.filter(m=>/(chat|turbo|mini|instruct)/i.test(m)));
+  pref.push(...known);
+  return uniqModelList(pref)[0]||selected||known[0];
+}
 async function callAPIRaw(prompt){
   const{apiKey,apiBase}=S.settings;
-  // 短文本生成任务（留言/评论/动态）强制用对话模型，避免推理模型把思考链混入正文
-  const shortModel='deepseek-chat';
+  // 短文本生成任务（留言/评论/动态）尽量选对话模型，避免冗长推理混入正文
+  const shortModel=resolveShortTaskModel();
   const resp=await fetch(`${apiBase}/chat/completions`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:shortModel,messages:[{role:'system',content:'你是角色扮演助手。严格只输出角色说的内容正文，不输出任何分析、推理过程、引号包裹、前缀标注或说明文字。如果内容被引号包裹，去掉引号直接输出。'},{role:'user',content:prompt}],max_tokens:200,stream:false,temperature:0.92})});
   if(!resp.ok){
     const er=await resp.json().catch(()=>({}));
@@ -3311,22 +3380,144 @@ function saveMyProfile(){
 // ============================================================
 // GLOBAL SETTINGS
 // ============================================================
+function uniqModelList(list){
+  const out=[];
+  const seen=new Set();
+  for(const item of (list||[])){
+    const id=String(item||'').trim();
+    if(!id||seen.has(id))continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+function getModelOptionsFromSelect(){
+  const sel=document.getElementById('mod-sel');
+  if(!sel)return[];
+  return [...sel.options].map(o=>String(o.value||'').trim()).filter(Boolean);
+}
+function renderModelSelect(list,selected){
+  const sel=document.getElementById('mod-sel');
+  if(!sel)return;
+  const all=uniqModelList([...(list||[]),...(S.settings.modelOptions||[]),...DEFAULT_MODEL_OPTIONS]);
+  sel.innerHTML=all.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('');
+  const target=String(selected||S.settings.model||all[0]||'').trim();
+  if(target&&all.includes(target))sel.value=target;
+  else if(all.length)sel.value=all[0];
+}
+function setModelFetchStatus(text,isError=false){
+  const el=document.getElementById('model-fetch-status');
+  if(!el)return;
+  el.textContent=text;
+  el.style.color=isError?'#d7263d':'';
+}
+function normalizeApiBase(raw){
+  return String(raw||'').trim().replace(/\/+$/,'');
+}
+function buildModelsEndpoint(apiBase){
+  let base=normalizeApiBase(apiBase).replace(/\/chat\/completions?$/i,'').replace(/\/completions?$/i,'');
+  if(!base)throw new Error('API Base URL 不能为空');
+  return `${base}/models`;
+}
+function parseModelIds(payload){
+  const raw=Array.isArray(payload?.data)
+    ? payload.data
+    : Array.isArray(payload?.models)
+      ? payload.models
+      : Array.isArray(payload)
+        ? payload
+        : [];
+  return uniqModelList(raw.map(item=>{
+    if(typeof item==='string')return item;
+    if(item&&typeof item==='object')return item.id||item.model||item.name||'';
+    return'';
+  }));
+}
+function updateModelOptions(list,selected){
+  const merged=uniqModelList([...(list||[]),...getModelOptionsFromSelect(),...(S.settings.modelOptions||[])]);
+  S.settings.modelOptions=merged;
+  renderModelSelect(merged,selected||S.settings.model||merged[0]||'');
+}
+function ensureModelUIReady(){
+  updateModelOptions(S.settings.modelOptions||[],S.settings.model||'');
+}
+function queueModelFetch(auto=false,delay=420){
+  clearTimeout(_modelFetchTimer);
+  _modelFetchTimer=setTimeout(()=>{void fetchModelsByCurrentInputs(auto);},delay);
+}
+function bindModelInputsOnce(){
+  const keyEl=document.getElementById('ak-inp');
+  const baseEl=document.getElementById('ab-inp');
+  if(!keyEl||!baseEl)return;
+  if(keyEl.dataset.modelBind==='1')return;
+  const onInput=()=>queueModelFetch(true,460);
+  keyEl.addEventListener('input',onInput);
+  baseEl.addEventListener('input',onInput);
+  keyEl.dataset.modelBind='1';
+  baseEl.dataset.modelBind='1';
+}
+async function fetchModelsByCurrentInputs(auto=false){
+  const keyEl=document.getElementById('ak-inp');
+  const baseEl=document.getElementById('ab-inp');
+  const apiKey=String(keyEl?.value||S.settings.apiKey||'').trim();
+  const apiBase=String(baseEl?.value||S.settings.apiBase||'').trim();
+  if(!apiBase){setModelFetchStatus('请先填写 API Base URL');return;}
+  if(!apiKey){setModelFetchStatus('请先填写 API Key');return;}
+  const sig=`${normalizeApiBase(apiBase)}|${apiKey.slice(0,8)}|${apiKey.length}`;
+  if(auto&&sig===_lastModelFetchSignature)return;
+  if(_modelFetchLock)return;
+  _modelFetchLock=true;
+  setModelFetchStatus('正在拉取模型列表…');
+  try{
+    const endpoint=buildModelsEndpoint(apiBase);
+    const resp=await fetch(endpoint,{method:'GET',headers:{'Authorization':'Bearer '+apiKey,'Content-Type':'application/json'}});
+    if(!resp.ok){
+      const e=await resp.json().catch(()=>({}));
+      throw new Error(e.error?.message||`HTTP ${resp.status}`);
+    }
+    const data=await resp.json();
+    const ids=parseModelIds(data);
+    if(!ids.length)throw new Error('接口返回成功，但未解析到模型列表');
+    const current=document.getElementById('mod-sel')?.value||S.settings.model||ids[0];
+    updateModelOptions(ids,current);
+    setModelFetchStatus(`已拉取 ${ids.length} 个模型，可直接选择使用`);
+    _lastModelFetchSignature=sig;
+  }catch(err){
+    setModelFetchStatus(`模型拉取失败：${err.message}`,true);
+    if(!auto)toast('❌ '+err.message);
+  }finally{
+    _modelFetchLock=false;
+  }
+}
+function applyManualModel(){
+  const el=document.getElementById('mod-manual');
+  const v=String(el?.value||'').trim();
+  if(!v){toast('请输入模型名');return;}
+  updateModelOptions([v],v);
+  if(el)el.value='';
+  setModelFetchStatus(`已手动添加模型：${v}`);
+}
+
 function openGlobalSettings(){
   const s=S.settings;
+  ensureModelUIReady();
   document.getElementById('ak-inp').value=s.apiKey||'';
   document.getElementById('ab-inp').value=s.apiBase||'https://api.deepseek.com/v1';
-  document.getElementById('mod-sel').value=s.model||'deepseek-reasoner';
+  document.getElementById('mod-sel').value=s.model||document.getElementById('mod-sel').value||'deepseek-reasoner';
   document.getElementById('gsp-inp').value=s.globalSP||'';
   document.getElementById('t-inp').value=s.temperature||1;
   document.getElementById('tv').textContent=parseFloat(s.temperature||1).toFixed(1);
   document.getElementById('mt-sel').value=s.maxTokens||4096;
   document.getElementById('global-settings-modal').style.display='flex';
+  bindModelInputsOnce();
+  queueModelFetch(true,120);
   swTab('gs','api');
 }
 function saveGlobalSettings(){
   S.settings.apiKey=document.getElementById('ak-inp').value.trim();
   S.settings.apiBase=document.getElementById('ab-inp').value.trim();
   S.settings.model=document.getElementById('mod-sel').value;
+  S.settings.modelOptions=uniqModelList([...(S.settings.modelOptions||[]),...getModelOptionsFromSelect(),S.settings.model]);
   S.settings.globalSP=document.getElementById('gsp-inp').value.trim();
   S.settings.temperature=parseFloat(document.getElementById('t-inp').value);
   S.settings.maxTokens=parseInt(document.getElementById('mt-sel').value);
