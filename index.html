@@ -867,6 +867,10 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
             <input class="fi" type="text" id="mod-manual" placeholder="手动输入模型名，例如：gpt-4.1-mini">
             <button class="btn btn-s" type="button" onclick="applyManualModel()">使用</button>
           </div>
+          <div style="margin-top:8px">
+            <button class="btn btn-s" type="button" onclick="testSelectedModel()" style="width:100%">🧪 测试当前模型是否可用</button>
+          </div>
+          <div class="fhint" id="model-test-status">可测试当前选择模型是否有权限调用。</div>
         </div>
         <div class="fg"><label class="fl">Temperature <span id="tv" style="color:var(--pk);margin-left:5px">1.0</span></label>
           <input type="range" min="0" max="2" step="0.1" id="t-inp" value="1" oninput="document.getElementById('tv').textContent=parseFloat(this.value).toFixed(1)" style="width:100%;accent-color:var(--pk)">
@@ -1263,6 +1267,7 @@ let _autoMsgRunning = false;
 let _modelFetchTimer = null;
 let _modelFetchLock = false;
 let _lastModelFetchSignature = '';
+let _modelTestLock = false;
 const DEFAULT_MODEL_OPTIONS = ['deepseek-reasoner','deepseek-chat','gpt-4.1-mini','gpt-4o-mini'];
 
 function genId(prefix){
@@ -3411,6 +3416,12 @@ function setModelFetchStatus(text,isError=false){
   el.textContent=text;
   el.style.color=isError?'#d7263d':'';
 }
+function setModelTestStatus(text,isError=false){
+  const el=document.getElementById('model-test-status');
+  if(!el)return;
+  el.textContent=text;
+  el.style.color=isError?'#d7263d':'';
+}
 function normalizeApiBase(raw){
   return String(raw||'').trim().replace(/\/+$/,'');
 }
@@ -3418,6 +3429,13 @@ function buildModelsEndpoint(apiBase){
   let base=normalizeApiBase(apiBase).replace(/\/chat\/completions?$/i,'').replace(/\/completions?$/i,'');
   if(!base)throw new Error('API Base URL 不能为空');
   return `${base}/models`;
+}
+function buildChatCompletionsEndpoint(apiBase){
+  const base=normalizeApiBase(apiBase);
+  if(!base)throw new Error('API Base URL 不能为空');
+  if(/\/chat\/completions?$/i.test(base))return base;
+  if(/\/chat$/i.test(base))return `${base}/completions`;
+  return `${base}/chat/completions`;
 }
 function parseModelIds(payload){
   const raw=Array.isArray(payload?.data)
@@ -3496,6 +3514,48 @@ function applyManualModel(){
   updateModelOptions([v],v);
   if(el)el.value='';
   setModelFetchStatus(`已手动添加模型：${v}`);
+  setModelTestStatus(`已选择模型：${v}`);
+}
+async function testSelectedModel(){
+  const keyEl=document.getElementById('ak-inp');
+  const baseEl=document.getElementById('ab-inp');
+  const modelEl=document.getElementById('mod-sel');
+  const apiKey=String(keyEl?.value||S.settings.apiKey||'').trim();
+  const apiBase=String(baseEl?.value||S.settings.apiBase||'').trim();
+  const model=String(modelEl?.value||S.settings.model||'').trim();
+  if(!apiBase){setModelTestStatus('请先填写 API Base URL',true);return;}
+  if(!apiKey){setModelTestStatus('请先填写 API Key',true);return;}
+  if(!model){setModelTestStatus('请先选择模型',true);return;}
+  if(_modelTestLock)return;
+  _modelTestLock=true;
+  const t0=Date.now();
+  setModelTestStatus(`正在测试模型 ${model} …`);
+  try{
+    const endpoint=buildChatCompletionsEndpoint(apiBase);
+    const resp=await fetch(endpoint,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body:JSON.stringify({
+        model,
+        messages:[{role:'user',content:'hi'}],
+        max_tokens:1,
+        temperature:0,
+        stream:false
+      })
+    });
+    if(!resp.ok){
+      const e=await resp.json().catch(()=>({}));
+      throw new Error(e.error?.message||`HTTP ${resp.status}`);
+    }
+    const data=await resp.json();
+    const txt=String(data?.choices?.[0]?.message?.content||'').trim();
+    const ms=Date.now()-t0;
+    setModelTestStatus(`✅ 模型可用（约 ${ms}ms）${txt?`，返回示例：${txt.slice(0,28)}`:''}`);
+  }catch(err){
+    setModelTestStatus(`❌ 模型不可用：${err.message}`,true);
+  }finally{
+    _modelTestLock=false;
+  }
 }
 
 function openGlobalSettings(){
@@ -3509,6 +3569,7 @@ function openGlobalSettings(){
   document.getElementById('tv').textContent=parseFloat(s.temperature||1).toFixed(1);
   document.getElementById('mt-sel').value=s.maxTokens||4096;
   document.getElementById('global-settings-modal').style.display='flex';
+  setModelTestStatus('可测试当前选择模型是否有权限调用。');
   bindModelInputsOnce();
   queueModelFetch(true,120);
   swTab('gs','api');
