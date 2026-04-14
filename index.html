@@ -2051,10 +2051,6 @@ function getBeijingNowParts(ts=Date.now()){
   const period=h<6?'凌晨':h<12?'早上':h<14?'中午':h<18?'下午':'晚上';
   return{full,date,time,period};
 }
-function buildRealtimeLocalReply(){
-  const t=getBeijingNowParts();
-  return `现在是北京时间 ${t.full}（${t.date}，${t.period}${t.time}）。`;
-}
 
 async function sendMsg(){
   if(S.streaming||!S.currentChatId)return;
@@ -2069,23 +2065,6 @@ async function sendMsg(){
   if(draft){um.quoteText=draft.text;um.quoteAuthor=draft.author;}
   chat.messages.push(um);renderMsgs();showTyping(true);S.streaming=true;
   clearQuoteDraft();
-  if(chat.timelineMode==='real'&&isRealTimeQuestion(text)){
-    try{
-      await new Promise(r=>setTimeout(r,220+Math.random()*260));
-      um.read=true;
-      await appendAssistantResponse(S.currentChatId,chat,{content:buildRealtimeLocalReply(),thinking:null},{source:'time-local',forceSingle:true});
-      if(chat.autoSum) await checkAutoSum(chat);
-      if(!save())toast('⚠️ 本条回复已显示，但未能写入本地（存储空间不足）。请勿刷新页面，先导出备份或按提示清理后再发消息。');
-      renderMsgs();renderChatList();
-    }catch(err){
-      chat.messages.pop();
-      toast('❌ '+err.message);
-      renderMsgs();
-    }finally{
-      showTyping(false);S.streaming=false;
-    }
-    return;
-  }
   try{
     const res=await callChatAPI(S.currentChatId,chat);
     um.read=true;
@@ -2119,7 +2098,7 @@ function getTimelinePrompt(chat,nowTs,purpose){
 }
 function isRealTimeQuestion(text){
   const s=String(text||'');
-  return /(现在|当前|此刻|目前).{0,8}(几点|时间|日期|几号|星期|周几|礼拜几)|现在几点|几点了|几点啦|几点啊|什么时间|什么时候|今天几号|今天多少号|几月几号|星期几|周几|礼拜几|早上还是晚上|现在是早上|现在是晚上|当前时间|北京时间/.test(s);
+  return /(现在|当前|此刻|目前).{0,8}(几点|时间|日期|几号|星期|周几|礼拜几|早上|上午|中午|下午|晚上)|现在几点|现在时间|现在是什么时间|当前时间|今天几号|今天多少号|几月几号|星期几|周几|礼拜几|早上还是晚上|现在是早上|现在是晚上|北京时间/.test(s);
 }
 function buildSystemPrompt(charId,chat,purpose){
   const{apiKey,apiBase,model,globalSP,temperature,maxTokens}=S.settings;
@@ -2158,7 +2137,13 @@ async function callChatAPI(charId,chat,customPrompt,purpose='reply'){
   }
   if(chat.timelineMode==='real'&&isRealTimeQuestion(latestUserText)){
     const t=getBeijingNowParts();
-    const exact=`当前准确北京时间：${t.full}。请直接根据这个真实时间回答用户，不要延伸到虚构剧情时间。`;
+    const exact=[
+      `当前准确北京时间：${t.full}（${t.date}，${t.period}${t.time}）。`,
+      '你必须基于上面这个真实时间回答，并且时间不能错。',
+      '回答风格要求：严格保持当前角色既定人设、语气、称呼和关系状态，像恋人聊天，不像系统播报。',
+      '表达要求：自然口语、简短，不要使用“北京时间 2026/4/14 15:31:07（...）”这类机器播报格式。',
+      '信息密度要求：用户问几点就回答时间；问日期就回答日期；问星期就回答星期；问时段就回答早上/下午/晚上。除非用户明确要求精确到秒，否则不要带秒。'
+    ].join('\n');
     msgs.push({role:'system',content:exact});
   }
   const resp=await fetch(`${apiBase}/chat/completions`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model,messages:msgs,temperature:parseFloat(temperature)||1,max_tokens:parseInt(maxTokens)||4096,stream:false})});
