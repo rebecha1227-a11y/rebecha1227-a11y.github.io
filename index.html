@@ -623,7 +623,9 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
   <div id="tog-bar"><span class="hb">💗</span> <span id="tog-txt">我们在一起的第 1 天</span> <span class="hb">💗</span></div>
   <div id="cv-msgs">
     <div id="typ-ind">
-      <div class="typ-bub"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span class="typ-lbl" id="typ-lbl">正在输入…</span></div>
+      <div class="typ-bub"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span class="typ-lbl" id="typ-lbl">正在输入…</span>
+        <button id="stop-gen-btn" onclick="stopGeneration()" style="margin-left:10px;font-size:11px;padding:3px 12px;background:var(--red);color:#fff;border:none;border-radius:12px;display:none;cursor:pointer">停止</button>
+      </div>
     </div>
   </div>
   <div id="cv-inp">
@@ -748,6 +750,19 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
         <div class="fg"><label class="fl">时间线模式</label><select class="fsel" id="csp-timeline-mode" onchange="toggleTimelineFields()"><option value="real">现实时间线</option><option value="virtual">虚拟时间线</option></select></div>
         <div class="fg" id="csp-virtual-time-wrap"><label class="fl">当前虚拟时间段</label><input class="fi" id="csp-virtual-time-label" placeholder="例如：第一天晚上 / 第二天下午"></div>
         <div class="fg" id="csp-real-resume-wrap"><label class="fl">久未回复后继续方式</label><select class="fsel" id="csp-real-resume-mode"><option value="continue">继续之前剧情</option><option value="current">按当前现实时间继续</option></select></div>
+        <div class="fg" id="csp-char-tz-wrap"><label class="fl">角色所在时区</label>
+          <select class="fsel" id="csp-char-timezone">
+            <option value="follow">跟随用户时区</option>
+            <option value="Asia/Shanghai">北京 (UTC+8)</option>
+            <option value="Asia/Tokyo">东京 (UTC+9)</option>
+            <option value="Asia/Kolkata">印度 (UTC+5:30)</option>
+            <option value="America/New_York">美东 (UTC-5)</option>
+            <option value="America/Los_Angeles">美西 (UTC-8)</option>
+            <option value="Europe/London">伦敦 (UTC+0)</option>
+            <option value="Europe/Paris">巴黎 (UTC+1)</option>
+            <option value="Australia/Sydney">悉尼 (UTC+11)</option>
+          </select>
+        </div>
       </div>
     </div>
     <!-- Memory & System -->
@@ -830,8 +845,26 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
           <div class="chip pers" onclick="this.classList.toggle('on')">毒舌</div>
           <div class="chip pers" onclick="this.classList.toggle('on')">温暖治愈</div>
         </div>
+        <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
+          <input class="fi" id="ce-custom-tag" placeholder="自定义标签…" style="flex:1;margin:0" maxlength="10"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomPersTag();}">
+          <button class="btn btn-s" type="button" onclick="addCustomPersTag()" style="white-space:nowrap">+ 添加</button>
+        </div>
       </div>
       <div class="fg"><label class="fl">回复风格 / 说话习惯</label><input class="fi" id="ce-style" placeholder="例如：喜欢加~，爱用颜文字…"></div>
+      <div class="fg"><label class="fl">角色所在时区</label>
+        <select class="fsel" id="ce-timezone">
+          <option value="follow">跟随用户时区</option>
+          <option value="Asia/Shanghai">北京 (UTC+8)</option>
+          <option value="Asia/Tokyo">东京 (UTC+9)</option>
+          <option value="Asia/Kolkata">印度 (UTC+5:30)</option>
+          <option value="America/New_York">美东 (UTC-5)</option>
+          <option value="America/Los_Angeles">美西 (UTC-8)</option>
+          <option value="Europe/London">伦敦 (UTC+0)</option>
+          <option value="Europe/Paris">巴黎 (UTC+1)</option>
+          <option value="Australia/Sydney">悉尼 (UTC+11)</option>
+        </select>
+      </div>
       <div class="fg"><label class="fl">分组</label><select class="fsel" id="ce-group"></select></div>
       <div class="fg"><label class="fl">相识日期</label><input class="fi" type="date" id="ce-metat"></div>
     </div>
@@ -848,6 +881,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
         <button class="tbtn on" onclick="swTab('gs','api')">🔑 API</button>
         <button class="tbtn" onclick="swTab('gs','model')">🤖 模型</button>
         <button class="tbtn" onclick="swTab('gs','prompt')">📝 提示词</button>
+        <button class="tbtn" onclick="swTab('gs','storage');updateStorageBar()">💾 存储</button>
       </div>
       <div class="tpanel on" id="gs-tab-api">
         <div class="fg"><label class="fl">API Key</label>
@@ -881,6 +915,32 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
       </div>
       <div class="tpanel" id="gs-tab-prompt">
         <div class="fg"><label class="fl">全局 System Prompt</label><textarea class="fta" id="gsp-inp" rows="7" placeholder="对所有对话生效的全局设定…"></textarea></div>
+      </div>
+      <div class="tpanel" id="gs-tab-storage">
+        <div class="fg">
+          <label class="fl">本地存储用量</label>
+          <div style="background:#f0f0f0;border-radius:8px;height:22px;overflow:hidden;position:relative">
+            <div id="storage-bar" style="height:100%;border-radius:8px;transition:width .3s"></div>
+            <span id="storage-text" style="position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:11px;line-height:22px;font-weight:700"></span>
+          </div>
+          <div id="storage-warn" style="color:var(--red);font-size:12px;margin-top:4px;display:none"></div>
+          <div class="fhint" style="margin-top:6px">浏览器 localStorage 上限约 5MB。存储快满时会自动裁剪数据。建议定期导出备份或同步到云端。</div>
+        </div>
+        <div class="fg">
+          <label class="fl">你的时区</label>
+          <select class="fsel" id="gs-timezone">
+            <option value="auto">自动检测（跟随设备）</option>
+            <option value="Asia/Shanghai">北京时间 (UTC+8)</option>
+            <option value="Asia/Tokyo">东京时间 (UTC+9)</option>
+            <option value="Asia/Kolkata">印度时间 (UTC+5:30)</option>
+            <option value="America/New_York">美东时间 (UTC-5)</option>
+            <option value="America/Los_Angeles">美西时间 (UTC-8)</option>
+            <option value="Europe/London">伦敦时间 (UTC+0)</option>
+            <option value="Europe/Paris">巴黎时间 (UTC+1)</option>
+            <option value="Australia/Sydney">悉尼时间 (UTC+11)</option>
+          </select>
+          <div class="fhint">影响现实时间线模式下 AI 获取的时间信息。虚拟时间线不受影响。</div>
+        </div>
       </div>
     </div>
     <div class="mfoot"><button class="btn btn-s" onclick="closeMod('global-settings-modal')">取消</button><button class="btn btn-p" onclick="saveGlobalSettings()">💾 保存</button></div>
@@ -1406,8 +1466,10 @@ function toggleTimelineFields(){
   const mode=document.getElementById('csp-timeline-mode')?.value||'real';
   const v=document.getElementById('csp-virtual-time-wrap');
   const r=document.getElementById('csp-real-resume-wrap');
+  const tz=document.getElementById('csp-char-tz-wrap');
   if(v)v.style.display=mode==='virtual'?'block':'none';
   if(r)r.style.display=mode==='real'?'block':'none';
+  if(tz)tz.style.display=mode==='real'?'block':'none';
 }
 function migrateBubbleDataIfNeeded(){
   S.settings.bubblePresets=S.settings.bubblePresets||[];
@@ -1505,7 +1567,11 @@ function saveAfterQuotaRecovery(){
 function save(){
   try{
     const ok=saveTryRaw();
-    if(ok)scheduleCloudSync();
+    if(ok){
+      scheduleCloudSync();
+      const usage=getStorageUsage();
+      if(usage.percent>80&&!S._storageWarnShown){S._storageWarnShown=true;toast('⚠️ 本地存储已用 '+usage.percent+'%，建议导出备份或清理图片');}
+    }
     return ok;
   }
   catch(e){
@@ -1956,6 +2022,8 @@ function recallActiveMessage(){
   const act=getActiveMessage();if(!act)return;
   act.msg.recalled=true;
   act.msg.recalledAt=Date.now();
+  act.msg.content='';
+  act.msg.thinking=null;
   if(S._quoteDraft&&S._quoteDraft.chatId===act.chatId&&S._quoteDraft.msgId===act.msg.id)clearQuoteDraft();
   removeFavorite(act.chatId,act.msg.id);
   save();
@@ -2042,15 +2110,25 @@ function removeFavoriteAndRefresh(chatId,msgId){
 // ============================================================
 // SEND
 // ============================================================
-function getBeijingNowParts(ts=Date.now()){
-  const now=new Date(ts);
-  const full=now.toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false});
-  const date=now.toLocaleDateString('zh-CN',{timeZone:'Asia/Shanghai',year:'numeric',month:'long',day:'numeric',weekday:'long'});
-  const time=now.toLocaleTimeString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  const h=parseInt(now.toLocaleTimeString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false,hour:'2-digit'}),10)||0;
-  const period=h<6?'凌晨':h<12?'早上':h<14?'中午':h<18?'下午':'晚上';
-  return{full,date,time,period};
+function getUserTimezone(){
+  const tz=S.settings.timezone||'auto';
+  return tz==='auto'?Intl.DateTimeFormat().resolvedOptions().timeZone:tz;
 }
+function getCharTimezone(charId){
+  const charTz=S.chars[charId]?.timezone;
+  if(!charTz||charTz==='follow')return getUserTimezone();
+  return charTz;
+}
+function getNowParts(tz,ts=Date.now()){
+  const now=new Date(ts);
+  const full=now.toLocaleString('zh-CN',{timeZone:tz,hour12:false});
+  const date=now.toLocaleDateString('zh-CN',{timeZone:tz,year:'numeric',month:'long',day:'numeric',weekday:'long'});
+  const time=now.toLocaleTimeString('zh-CN',{timeZone:tz,hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const h=parseInt(now.toLocaleTimeString('zh-CN',{timeZone:tz,hour12:false,hour:'2-digit'}),10)||0;
+  const period=h<6?'凌晨':h<12?'早上':h<14?'中午':h<18?'下午':'晚上';
+  return{full,date,time,period,tz};
+}
+function getBeijingNowParts(ts){return getNowParts(getUserTimezone(),ts);}
 
 async function sendMsg(){
   if(S.streaming||!S.currentChatId)return;
@@ -2072,9 +2150,10 @@ async function sendMsg(){
     if(chat.autoSum) await checkAutoSum(chat);
   }catch(err){
     chat.messages.pop();
-    toast('❌ '+err.message);
+    if(err.name==='AbortError'){toast('已停止生成');}
+    else{toast('❌ '+err.message);}
     renderMsgs();
-    showTyping(false);S.streaming=false;
+    showTyping(false);S.streaming=false;S.abortCtrl=null;
     return;
   }
   if(!save())toast('⚠️ 本条回复已显示，但未能写入本地（存储空间不足）。请勿刷新页面，先导出备份或按提示清理后再发消息。');
@@ -2082,18 +2161,29 @@ async function sendMsg(){
   showTyping(false);S.streaming=false;
 }
 
-function getTimelinePrompt(chat,nowTs,purpose){
-  const t=getBeijingNowParts(nowTs||Date.now());
+function getTimelinePrompt(chat,nowTs,purpose,charId){
   const lastUser=[...(chat.messages||[])].reverse().find(m=>m.role==='user');
   const gapMin=lastUser?Math.max(0,Math.floor((Date.now()-(lastUser.timestamp||Date.now()))/60000)):0;
   if(chat.timelineMode==='virtual'){
     return `【时间线模式】虚拟时间线。当前剧情时间段：${chat.virtualTimeLabel||'晚上'}。无论现实中过去多久，都默认继续之前的剧情与上下文，不要因为现实时间变化擅自跳到新的时间点，除非用户明确提出。`;
   }
-  let out=`【时间线模式】现实时间线。你与用户处于同一个现实世界。当前准确北京时间为 ${t.full}；其中日期是 ${t.date}，时间是 ${t.time}。如果用户问“现在几点”“现在什么时候”“今天几号”“星期几”“早上还是晚上”等现实时间问题，你必须直接按这里给出的真实北京时间回答，不能使用虚构剧情时间，不能说错时段。`;
-  if(purpose==='auto')out+=' 这是你在用户暂时没回复时主动发出的消息，内容必须符合此刻现实时间段。';
+  const userTz=getUserTimezone();
+  const charTz=getCharTimezone(charId);
+  const userTime=getNowParts(userTz,nowTs||Date.now());
+  const charTime=getNowParts(charTz,nowTs||Date.now());
+  const sameZone=(userTz===charTz);
+  let out;
+  if(sameZone){
+    out=`【时间线模式】现实时间线。你与用户处于同一个现实世界。当前准确时间为 ${charTime.full}；其中日期是 ${charTime.date}，时间是 ${charTime.time}。如果用户问”现在几点””现在什么时候””今天几号””星期几””早上还是晚上”等现实时间问题，你必须直接按这里给出的真实时间回答，不能使用虚构剧情时间，不能说错时段。`;
+  } else {
+    out=`【时间线模式】现实时间线。你（角色）当前所在时区的时间为 ${charTime.full}（${charTime.date}，${charTime.period}）。用户当前所在时区的时间为 ${userTime.full}（${userTime.date}，${userTime.period}）。你们处于不同时区，请自然地考虑时差。回答时间问题时，用你自己的时区时间；关心用户时，用用户时区的时间。`;
+  }
+  out+=` 你的当前时间段为【${charTime.period}】，你说的话、状态和行为必须符合你这边的时间段。`;
+  out+=` 用户的当前时间段为【${userTime.period}】，对用户的关心和建议必须符合用户那边的时间段：早上适合问早安、聊起床计划；中午适合聊午饭、午休；下午适合聊日常活动；晚上适合聊晚餐、放松；凌晨适合聊失眠、深夜话题。绝对不能在用户的白天（早上/中午/下午）建议用户去睡觉，也不能在用户的深夜/凌晨建议用户出门活动。`;
+  if(purpose==='auto')out+=` 这是你在用户暂时没回复时主动发出的消息，内容必须完全符合当前时间段的日常作息场景，不要提及与此时间不符的活动。`;
   else if(gapMin>=30)out+=chat.realTimeResumeMode==='continue'
     ? ' 用户隔了一段现实时间后回来时，请优先继续之前的剧情和上下文。'
-    : ` 用户隔了一段现实时间后回来时，请按当前现实时间自然衔接。你可直接提到“现在是${t.period}${t.time}”。`;
+    : ` 用户隔了一段现实时间后回来时，请按当前现实时间自然衔接。你可直接提到”现在是${charTime.period}${charTime.time}”。`;
   return out;
 }
 function isRealTimeQuestion(text){
@@ -2117,7 +2207,7 @@ function buildSystemPrompt(charId,chat,purpose){
   if(chat.systemPrompt) parts.push(chat.systemPrompt);
   if(chat.useMem&&S.memory) parts.push('【用户背景记忆】\n'+S.memory);
   if(chat.chatMem) parts.push('【自动总结记忆】\n'+chat.chatMem);
-  parts.push(getTimelinePrompt(chat,Date.now(),purpose));
+  parts.push(getTimelinePrompt(chat,Date.now(),purpose,charId));
   if(S.together.startDate){const d=Math.floor((Date.now()-new Date(S.together.startDate))/86400000);parts.push(`【关系】已在一起 ${d} 天`);}
   if(chat.allowMultiMsg)parts.push('【发消息方式】为了增强真实互动感，你在普通私聊回复时，优先连续发送 2 到 5 条较短消息；只有内容特别短、特别直接时才发 1 条。多条消息应像真人连续发消息，长度有短有长，不要每条都一样长。如果要分成多条，必须只用 <NEXT_MSG> 作为消息分隔符，不要编号，不要解释，不要说“第1条/第2条”。');
   return parts.join('\n\n')||'你是温柔体贴的AI伴侣，请用中文回复。';
@@ -2132,21 +2222,29 @@ async function callChatAPI(charId,chat,customPrompt,purpose='reply'){
   const lastUser=[...(chat.messages||[])].reverse().find(m=>m.role==='user'&&!m.recalled);
   const gapMin=lastUser?Math.max(0,Math.floor((Date.now()-(lastUser.timestamp||Date.now()))/60000)):0;
   if(chat.timelineMode==='real'&&chat.realTimeResumeMode==='current'&&gapMin>=30){
-    const t=getBeijingNowParts();
-    msgs.push({role:'system',content:`系统校时：现在是北京时间 ${t.full}。与上一条用户消息已间隔约 ${gapMin} 分钟，请按当前现实时间衔接，不要停留在旧剧情时点。`});
+    const charTz=getCharTimezone(charId);
+    const t=getNowParts(charTz);
+    msgs.push({role:'system',content:`系统校时：现在是 ${t.full}。与上一条用户消息已间隔约 ${gapMin} 分钟，请按当前现实时间衔接，不要停留在旧剧情时点。`});
   }
   if(chat.timelineMode==='real'&&isRealTimeQuestion(latestUserText)){
-    const t=getBeijingNowParts();
+    const charTz=getCharTimezone(charId);
+    const userTz=getUserTimezone();
+    const ct=getNowParts(charTz);
+    const ut=getNowParts(userTz);
+    const sameZone=(charTz===userTz);
     const exact=[
-      `当前准确北京时间：${t.full}（${t.date}，${t.period}${t.time}）。`,
-      '你必须基于上面这个真实时间回答，并且时间不能错。',
+      sameZone
+        ?`当前准确时间：${ct.full}（${ct.date}，${ct.period}${ct.time}）。`
+        :`你（角色）的时间：${ct.full}（${ct.period}）。用户的时间：${ut.full}（${ut.period}）。`,
+      '你必须基于上面的真实时间回答，并且时间不能错。',
       '回答风格要求：严格保持当前角色既定人设、语气、称呼和关系状态，像恋人聊天，不像系统播报。',
-      '表达要求：自然口语、简短，不要使用“北京时间 2026/4/14 15:31:07（...）”这类机器播报格式。',
+      '表达要求：自然口语、简短，不要使用机器播报格式。',
       '信息密度要求：用户问几点就回答时间；问日期就回答日期；问星期就回答星期；问时段就回答早上/下午/晚上。除非用户明确要求精确到秒，否则不要带秒。'
     ].join('\n');
     msgs.push({role:'system',content:exact});
   }
-  const resp=await fetch(`${apiBase}/chat/completions`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model,messages:msgs,temperature:parseFloat(temperature)||1,max_tokens:parseInt(maxTokens)||4096,stream:false})});
+  const ctrl=new AbortController();S.abortCtrl=ctrl;
+  const resp=await fetch(`${apiBase}/chat/completions`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model,messages:msgs,temperature:parseFloat(temperature)||1,max_tokens:parseInt(maxTokens)||4096,stream:false}),signal:ctrl.signal});
   if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${resp.status}`);}
   const data=await resp.json();const ch=data.choices?.[0];
   return{content:ch?.message?.content||'',thinking:ch?.message?.reasoning_content||null};
@@ -2231,9 +2329,22 @@ async function maybeSendAutoMessage(charId){
   const chat=S.chats[charId];if(!chat||!chat.autoMsgEnabled||!S.settings.apiKey)return;
   const every=Math.max(1,parseInt(chat.autoMsgEvery)||1);
   const interval=every*(chat.autoMsgUnit==='minute'?60000:3600000);
-  const lastEvent=(chat.messages||[]).at(-1)?.timestamp||0;
-  if(!lastEvent||Date.now()-lastEvent<interval)return;
-  const prompt=`用户已经有一段时间没有回复你。请你结合最近聊天上下文、你们的关系、当前时间线模式，主动发 1 到 2 条自然的关心或延续剧情的消息。不要突然开启无关话题，不要解释“我是自动发送”。如果要分两条，请用 <NEXT_MSG> 分隔。`;
+  const msgs=chat.messages||[];
+  const lastMsg=msgs.at(-1);
+  if(!lastMsg)return;
+  if(Date.now()-(lastMsg.timestamp||0)<interval)return;
+  // 统计用户上次回复后，AI已连续发了几条自动消息
+  const lastUserIdx=[...msgs].reverse().findIndex(m=>m.role==='user');
+  const trailingMsgs=lastUserIdx===-1?msgs:msgs.slice(msgs.length-lastUserIdx);
+  const consecutiveAuto=trailingMsgs.filter(m=>m.auto).length;
+  const MAX_AUTO_PER_SILENCE=3;
+  if(consecutiveAuto>=MAX_AUTO_PER_SILENCE)return;
+  const emotionGuide=consecutiveAuto===0
+    ?'这是你第一次发现用户没有回复，语气自然轻松，可以略带好奇或随意地关心一句。'
+    :consecutiveAuto===1
+    ?'用户已经有好一段时间没回复你了，可以表现出轻微的担心或失落，但不要太夸张。'
+    :'用户很久都没有回复你，可以表达更深的思念、不安，或轻微的委屈/失落感，像真正在意对方的人一样。';
+  const prompt=`用户有一段时间没有回复。${emotionGuide}请结合最近聊天上下文和你们的关系，连续发送 2 到 5 条消息，像真人发微信一样每条短一些、节奏自然，绝对不能重复你之前已经说过的话，不要解释”我是自动发送”。每条消息之间用 <NEXT_MSG> 分隔。`;
   try{
     const res=await callChatAPI(charId,chat,prompt,'auto');
     await appendAssistantResponse(charId,chat,res,{source:'auto'});
@@ -2257,7 +2368,15 @@ async function runAutoMessageChecks(){
   }
 }
 
-function showTyping(show){document.getElementById('typ-ind').classList.toggle('show',show);scrollBot();}
+function showTyping(show){
+  document.getElementById('typ-ind').classList.toggle('show',show);
+  const stopBtn=document.getElementById('stop-gen-btn');
+  if(stopBtn)stopBtn.style.display=(show&&S.streaming)?'inline-block':'none';
+  scrollBot();
+}
+function stopGeneration(){
+  if(S.abortCtrl){S.abortCtrl.abort();S.abortCtrl=null;}
+}
 function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(!document.getElementById('send-btn').disabled)sendMsg();}}
 function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,110)+'px';}
 function sendHeart(){const i=document.getElementById('user-input');i.value=(i.value||'')+'💕';i.dispatchEvent(new Event('input'));burstHearts(document.getElementById('send-btn'));}
@@ -2419,8 +2538,18 @@ function openCharEditor(charId){
   gsel.value=(char?.group&&gnames.includes(char.group))?char.group:'默认';
   const md=char?.metAt||(char?.createdAt?new Date(char.createdAt).toISOString().slice(0,10):'');
   document.getElementById('ce-metat').value=md?String(md).slice(0,10):'';
+  document.querySelectorAll('.chip.pers.custom').forEach(c=>c.remove());
   document.querySelectorAll('.chip.pers').forEach(c=>c.classList.toggle('on',char?.personalities?.includes(c.textContent)));
+  const PRESET_TAGS=['温柔体贴','傲娇','活泼开朗','撒娇','成熟稳重','黏人','毒舌','温暖治愈'];
+  (char?.personalities||[]).filter(t=>!PRESET_TAGS.includes(t)).forEach(t=>{
+    const chip=document.createElement('div');
+    chip.className='chip pers on custom';
+    chip.textContent=t;
+    chip.onclick=function(){this.classList.toggle('on');};
+    document.querySelector('#chared-modal .chips').appendChild(chip);
+  });
   document.querySelectorAll('.chip.nick').forEach(c=>c.classList.toggle('on',c.textContent===char?.nickname));
+  document.getElementById('ce-timezone').value=char?.timezone||'follow';
   document.getElementById('ce-cover-preview').textContent=S._tempCharCover?'✅ 已有封面图':'';
   document.getElementById('chared-modal').style.display='flex';
 }
@@ -2430,6 +2559,22 @@ function selNick(el,nick){document.querySelectorAll('.chip.nick').forEach(c=>c.c
 function loadCEAv(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{S._tempCharAv=ev.target.result;toast('✅ 头像已加载');};r.readAsDataURL(f);}
 function loadCECover(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{S._tempCharCover=ev.target.result;document.getElementById('ce-cover-preview').textContent='✅ 封面已加载';};r.readAsDataURL(f);}
 
+function addCustomPersTag(){
+  const input=document.getElementById('ce-custom-tag');
+  const val=input.value.trim();
+  if(!val)return;
+  const existing=[...document.querySelectorAll('.chip.pers')];
+  if(existing.some(c=>c.textContent===val)){
+    existing.find(c=>c.textContent===val).classList.add('on');
+    input.value='';return;
+  }
+  const chip=document.createElement('div');
+  chip.className='chip pers on custom';
+  chip.textContent=val;
+  chip.onclick=function(){this.classList.toggle('on');};
+  document.querySelector('#chared-modal .chips').appendChild(chip);
+  input.value='';
+}
 function saveChar(){
   const id=document.getElementById('editing-char-id').value||('char_'+Date.now());
   const existing=S.chars[id]||{};
@@ -2445,6 +2590,7 @@ function saveChar(){
     persona:document.getElementById('ce-persona').value.trim(),
     personalities:[...document.querySelectorAll('.chip.pers.on')].map(c=>c.textContent),
     style:document.getElementById('ce-style').value.trim(),
+    timezone:document.getElementById('ce-timezone').value||'follow',
     group:document.getElementById('ce-group').value,
     metAt:(document.getElementById('ce-metat').value||'').trim()||existing.metAt||null,
     createdAt:existing.createdAt||Date.now()
@@ -2485,6 +2631,7 @@ function openChatSettingsPanel(){
   document.getElementById('csp-timeline-mode').value=chat.timelineMode||'real';
   document.getElementById('csp-virtual-time-label').value=chat.virtualTimeLabel||'';
   document.getElementById('csp-real-resume-mode').value=chat.realTimeResumeMode||'continue';
+  document.getElementById('csp-char-timezone').value=(S.chars[S.currentChatId]?.timezone)||'follow';
   toggleTimelineFields();
   document.getElementById('csp-search').value='';
   document.getElementById('csp-search-results').innerHTML='';
@@ -2528,6 +2675,7 @@ function closeChatSettingsPanel(){
     chat.timelineMode=document.getElementById('csp-timeline-mode').value||'real';
     chat.virtualTimeLabel=document.getElementById('csp-virtual-time-label').value.trim()||'晚上';
     chat.realTimeResumeMode=document.getElementById('csp-real-resume-mode').value||'continue';
+    if(S.chars[S.currentChatId])S.chars[S.currentChatId].timezone=document.getElementById('csp-char-timezone').value||'follow';
     const char=S.chars[S.currentChatId];
     const typTxt=chat.typingTxt||(char?.name+' 正在输入…');
     document.getElementById('typ-lbl').textContent=typTxt;
@@ -3553,6 +3701,7 @@ function openGlobalSettings(){
   document.getElementById('t-inp').value=s.temperature||1;
   document.getElementById('tv').textContent=parseFloat(s.temperature||1).toFixed(1);
   document.getElementById('mt-sel').value=s.maxTokens||4096;
+  document.getElementById('gs-timezone').value=s.timezone||'auto';
   document.getElementById('global-settings-modal').style.display='flex';
   setModelTestStatus('可测试当前选择模型是否有权限调用。');
   bindModelInputsOnce();
@@ -3567,9 +3716,27 @@ function saveGlobalSettings(){
   S.settings.globalSP=document.getElementById('gsp-inp').value.trim();
   S.settings.temperature=parseFloat(document.getElementById('t-inp').value);
   S.settings.maxTokens=parseInt(document.getElementById('mt-sel').value);
+  S.settings.timezone=document.getElementById('gs-timezone').value||'auto';
   save();closeMod('global-settings-modal');toast('✅ 设置已保存');
 }
 function togAK(){const i=document.getElementById('ak-inp');i.type=i.type==='password'?'text':'password';}
+function getStorageUsage(){
+  try{const data=localStorage.getItem('aichat-v4')||'';const usedBytes=new Blob([data]).size;const estimatedMax=5*1024*1024;return{usedBytes,estimatedMax,percent:Math.round(usedBytes/estimatedMax*100)};}
+  catch(e){return{usedBytes:0,estimatedMax:5242880,percent:0};}
+}
+function updateStorageBar(){
+  const{usedBytes,percent}=getStorageUsage();
+  const bar=document.getElementById('storage-bar');
+  const text=document.getElementById('storage-text');
+  const warn=document.getElementById('storage-warn');
+  if(!bar)return;
+  const mb=(usedBytes/1024/1024).toFixed(1);
+  bar.style.width=Math.min(percent,100)+'%';
+  bar.style.background=percent>85?'var(--red)':percent>60?'#ffa500':'var(--grn)';
+  text.textContent=`${mb} MB / ~5 MB (${percent}%)`;
+  if(percent>80){warn.style.display='block';warn.textContent='⚠️ 存储空间即将满！建议导出备份，或清理朋友圈照片/聊天背景图。';}
+  else{warn.style.display='none';}
+}
 
 // ============================================================
 // BUBBLE SETTINGS
