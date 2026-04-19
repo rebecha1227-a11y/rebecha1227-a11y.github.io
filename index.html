@@ -442,8 +442,10 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 .ci-pin{font-size:13px;margin-left:4px;color:var(--pk)}
 .ci.pinned .ci-name::after{content:' 📌';font-size:11px}
-.ci-pin-btn{background:none;border:none;font-size:16px;cursor:pointer;padding:4px 6px;opacity:.5;flex-shrink:0;-webkit-tap-highlight-color:transparent}
-.ci-pin-btn:hover{opacity:1}
+.ci-ctx-menu{position:fixed;z-index:9999;background:#fff;border-radius:14px;box-shadow:0 4px 24px rgba(0,0,0,.18);overflow:hidden;min-width:160px;font-size:15px}
+.ci-ctx-item{padding:12px 20px;cursor:pointer;border-bottom:1px solid #f5f0f3}
+.ci-ctx-item:last-child{border-bottom:none}
+.ci-ctx-item:active{background:#f9f0f5}
 .gs-search-btn{background:none;border:none;font-size:18px;cursor:pointer;padding:4px 8px;-webkit-tap-highlight-color:transparent}
 #global-search-results .gs-res-item{padding:10px 14px;border-bottom:1px solid var(--pkb);cursor:pointer}
 #global-search-results .gs-res-item:active{background:var(--rose)}
@@ -1260,6 +1262,13 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
   </div>
 </div>
 
+<div id="ci-ctx-backdrop" style="display:none;position:fixed;inset:0;z-index:9998" onclick="closeCiCtxMenu()"></div>
+<div id="ci-ctx-menu" class="ci-ctx-menu" style="display:none">
+  <div class="ci-ctx-item" onclick="_ciCtxMarkUnread()">标为未读</div>
+  <div class="ci-ctx-item" id="ci-ctx-pin-item" onclick="_ciCtxPin()">置顶</div>
+  <div class="ci-ctx-item" style="color:#e53935" onclick="_ciCtxHide()">不显示</div>
+</div>
+
 <div id="msg-action-modal" class="moverlay" style="display:none" onclick="closeMod('msg-action-modal')">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="mhdr"><div class="mtitle">消息操作</div><button class="mcls" onclick="closeMod('msg-action-modal')">✕</button></div>
@@ -1815,12 +1824,54 @@ function switchTab(pageId,el){
 // ============================================================
 // CHAT LIST (page 1)
 // ============================================================
+let _ciCtxCharId=null;
+function openCiCtxMenu(charId,x,y){
+  _ciCtxCharId=charId;
+  const menu=document.getElementById('ci-ctx-menu');
+  const backdrop=document.getElementById('ci-ctx-backdrop');
+  if(!menu||!backdrop)return;
+  const isPinned=!!S.chars[charId]?.pinned;
+  const pinItem=document.getElementById('ci-ctx-pin-item');
+  if(pinItem)pinItem.textContent=isPinned?'取消置顶':'置顶';
+  const vw=window.innerWidth,vh=window.innerHeight;
+  menu.style.left=Math.min(x,vw-170)+'px';
+  menu.style.top=Math.min(y,vh-130)+'px';
+  menu.style.display='block';
+  backdrop.style.display='block';
+}
+function closeCiCtxMenu(){
+  const menu=document.getElementById('ci-ctx-menu');
+  const backdrop=document.getElementById('ci-ctx-backdrop');
+  if(menu)menu.style.display='none';
+  if(backdrop)backdrop.style.display='none';
+}
+function _ciCtxMarkUnread(){
+  if(!_ciCtxCharId)return;
+  const chat=S.chats[_ciCtxCharId];
+  if(chat)chat.unread=Math.max(chat.unread||0,1);
+  save();renderChatList();updateMsgTabBadge();
+  closeCiCtxMenu();
+}
+function _ciCtxPin(){
+  if(!_ciCtxCharId)return;
+  togglePinChat(_ciCtxCharId);
+  closeCiCtxMenu();
+}
+function _ciCtxHide(){
+  if(!_ciCtxCharId)return;
+  const name=S.chars[_ciCtxCharId]?.name||'TA';
+  if(!confirm(`隐藏与「${name}」的聊天？消息不会删除，点开角色可以重新聊。`))return;
+  if(S.chats[_ciCtxCharId])S.chats[_ciCtxCharId].hidden=true;
+  if(S.currentChatId===_ciCtxCharId){document.getElementById('pg-msg').style.display='none';document.getElementById('pg-chat').style.display='';}
+  save();renderChatList();
+  closeCiCtxMenu();
+}
 function renderChatList(){
   const wrap=document.getElementById('chat-list-wrap');
   const hint=document.getElementById('no-chats-hint');
   const chatCharIds=Object.keys(S.chats).filter(cid=>S.chats[cid].messages?.length>0);
   // Also show all chars that have a chat entry
-  const allChatIds=Object.keys(S.chats);
+  const allChatIds=Object.keys(S.chats).filter(cid=>!S.chats[cid].hidden);
   if(!allChatIds.length){hint&&(hint.style.display='');return;}
   hint&&(hint.style.display='none');
   // Sort: pinned first, then by last message time
@@ -1847,10 +1898,13 @@ function renderChatList(){
     const div=document.createElement('div');
     div.className='ci'+(isPinned?' pinned':'');
     div.onclick=()=>openChat(charId);
-    const pinIcon=isPinned?'📌':'📍';
     const unread=S.chats[charId]?.unread||0;
     const badgeHtml=unread>0?`<div class="ci-badge">${unread>99?'99+':unread}</div>`:'';
-    div.innerHTML=`<div class="ci-av">${avc}<div class="online-dot"></div></div><div class="ci-info"><div class="ci-name">${esc(dispName)}</div><div class="ci-prev">${esc(preview)}</div></div><div class="ci-meta"><div class="ci-time">${ts}</div>${badgeHtml}<button class="ci-pin-btn" title="${isPinned?'取消置顶':'置顶'}" onclick="event.stopPropagation();togglePinChat('${charId}')">${isPinned?'📌':'⬜'}</button></div>`;
+    div.innerHTML=`<div class="ci-av">${avc}<div class="online-dot"></div></div><div class="ci-info"><div class="ci-name">${esc(dispName)}</div><div class="ci-prev">${esc(preview)}</div></div><div class="ci-meta"><div class="ci-time">${ts}</div>${badgeHtml}</div>`;
+    div.addEventListener('contextmenu',e=>{e.preventDefault();openCiCtxMenu(charId,e.clientX,e.clientY);});
+    let _swipeX=0;
+    div.addEventListener('touchstart',e=>{_swipeX=e.touches[0].clientX;},{passive:true});
+    div.addEventListener('touchend',e=>{if(e.changedTouches[0].clientX-_swipeX<-50)openCiCtxMenu(charId,window.innerWidth-170,e.changedTouches[0].clientY-20);},{passive:true});
     wrap.appendChild(div);
   });
   updateMsgTabBadge();
@@ -1861,6 +1915,7 @@ function renderChatList(){
 // ============================================================
 function openChat(charId){
   S.currentChatId=charId;
+  if(S.chats[charId]?.hidden) S.chats[charId].hidden=false;
   if(!S.chats[charId]){
     S.chats[charId]={messages:[],systemPrompt:'',useMem:true,autoSum:false,sumTrig:20,sumStyle:'overall',chatMem:'',lastSumAt:0,bubbleStyle:'default',customCSS:'',chatBg:null,typingTxt:'',pokeTxt:'',showUserAvatar:true,showAssistantAvatar:true,showStatus:true,statusText:'',allowMultiMsg:true,autoMsgEnabled:false,autoMsgEvery:3,autoMsgUnit:'hour',timelineMode:'real',virtualTimeLabel:'晚上',realTimeResumeMode:'continue',lastAutoMsgAt:0,lastTimelineAnchor:0};
     save();
@@ -2248,7 +2303,8 @@ function updateStreamingBubble(content,thinking){
   }
   const bub=document.getElementById('stream-bub-text');
   if(bub){
-    bub.textContent=content;
+    const splitTagReg=/<\s*\/?\s*next(?:[\s_-]*(?:msg|message))\s*\/?\s*>/i;
+    bub.textContent=content.split(splitTagReg)[0];
     let cursor=bub.querySelector('.stream-cursor');
     if(!cursor){cursor=document.createElement('span');cursor.className='stream-cursor';cursor.textContent='▋';bub.appendChild(cursor);}
   }
@@ -2294,10 +2350,11 @@ async function confirmEditAndRegen(){
   if(idx===-1)return;
   chat.messages[idx].content=newText;
   chat.messages.splice(idx+1);
+  const editCharId=act.chatId;
   S.streaming=true;renderMsgs();showTyping(true);
   try{
-    const res=await callChatAPI(act.chatId,chat,null,'reply',(c,t)=>updateStreamingBubble(c,t));
-    await appendAssistantResponse(act.chatId,chat,res,{source:'reply'});
+    const res=await callChatAPI(editCharId,chat,null,'reply',(c,t)=>{if(S.currentChatId===editCharId)updateStreamingBubble(c,t);});
+    await appendAssistantResponse(editCharId,chat,res,{source:'reply'});
   }catch(err){
     if(err.name==='AbortError'){toast('已停止生成');}
     else{toast('❌ '+err.message);}
@@ -2337,12 +2394,13 @@ async function sendMsg(){
   const draft=S._quoteDraft&&S._quoteDraft.chatId===S.currentChatId?S._quoteDraft:null;
   const um={id:genId('msg'),role:'user',content:text,timestamp:Date.now(),read:false};
   if(draft){um.quoteText=draft.text;um.quoteAuthor=draft.author;}
+  const sendCharId=S.currentChatId;
   chat.messages.push(um);renderMsgs();S.streaming=true;showTyping(true);
   clearQuoteDraft();
   try{
-    const res=await callChatAPI(S.currentChatId,chat,null,'reply',(c,t)=>updateStreamingBubble(c,t));
+    const res=await callChatAPI(sendCharId,chat,null,'reply',(c,t)=>{if(S.currentChatId===sendCharId)updateStreamingBubble(c,t);});
     um.read=true;
-    await appendAssistantResponse(S.currentChatId,chat,res,{source:'reply'});
+    await appendAssistantResponse(sendCharId,chat,res,{source:'reply'});
     if(chat.autoSum) await checkAutoSum(chat);
   }catch(err){
     chat.messages.pop();
@@ -2478,7 +2536,7 @@ async function callChatAPI(charId,chat,customPrompt,purpose='reply',onChunk){
 function splitIntoChunksByLength(raw,minParts,maxParts){
   const text=String(raw||'').trim();
   if(!text)return[];
-  const pieces=text.match(/[^。！？!?，,\n]+[。！？!?，,\n]?/g)?.map(s=>s.trim()).filter(Boolean)||[text];
+  const pieces=text.match(/[^。！？!?\n]+[。！？!?\n]?/g)?.map(s=>s.trim()).filter(Boolean)||[text];
   const desired=Math.max(minParts,Math.min(maxParts,Math.ceil(text.length/22)));
   if(pieces.length>=desired){
     const out=[];
@@ -2501,8 +2559,8 @@ function splitIntoChunksByLength(raw,minParts,maxParts){
   for(let i=0;i<target-1;i++){
     let cut=Math.round(text.length*(i+1)/target);
     for(let offset=0;offset<12&&cut+offset<text.length-1;offset++){
-      if(/[。！？!?，,、\s]/.test(text[cut+offset])){cut=cut+offset+1;break;}
-      if(cut-offset>start&&/[。！？!?，,、\s]/.test(text[cut-offset])){cut=cut-offset+1;break;}
+      if(/[。！？!?\n]/.test(text[cut+offset])){cut=cut+offset+1;break;}
+      if(cut-offset>start&&/[。！？!?\n]/.test(text[cut-offset])){cut=cut-offset+1;break;}
     }
     const part=text.slice(start,cut).trim();
     if(part)out.push(part);
@@ -2546,7 +2604,8 @@ async function appendAssistantResponse(charId,chat,res,opts={}){
       read:true,
       auto:opts.source==='auto'
     });
-    if(S.currentChatId===charId)renderMsgs();
+    const chatOpen=document.getElementById('chat-view')?.classList.contains('open');
+    if(S.currentChatId===charId&&chatOpen)renderMsgs();
     else{chat.unread=(chat.unread||0)+1;updateMsgTabBadge();}
     renderChatList();
     save();
