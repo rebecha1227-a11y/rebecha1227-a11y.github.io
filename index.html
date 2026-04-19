@@ -2353,8 +2353,8 @@ async function confirmEditAndRegen(){
   const editCharId=act.chatId;
   S.streaming=true;renderMsgs();showTyping(true);
   try{
-    const res=await callChatAPI(editCharId,chat,null,'reply',(c,t)=>{if(S.currentChatId===editCharId)updateStreamingBubble(c,t);});
-    await appendAssistantResponse(editCharId,chat,res,{source:'reply',forceSingle:true});
+    const res=await callChatAPI(editCharId,chat,null,'reply',()=>{});
+    await appendAssistantResponse(editCharId,chat,res,{source:'reply'});
   }catch(err){
     if(err.name==='AbortError'){toast('已停止生成');}
     else{toast('❌ '+err.message);}
@@ -2398,9 +2398,9 @@ async function sendMsg(){
   chat.messages.push(um);renderMsgs();S.streaming=true;showTyping(true);
   clearQuoteDraft();
   try{
-    const res=await callChatAPI(sendCharId,chat,null,'reply',(c,t)=>{if(S.currentChatId===sendCharId)updateStreamingBubble(c,t);});
+    const res=await callChatAPI(sendCharId,chat,null,'reply',()=>{});
     um.read=true;
-    await appendAssistantResponse(sendCharId,chat,res,{source:'reply',forceSingle:true});
+    await appendAssistantResponse(sendCharId,chat,res,{source:'reply'});
     if(chat.autoSum) await checkAutoSum(chat);
   }catch(err){
     chat.messages.pop();
