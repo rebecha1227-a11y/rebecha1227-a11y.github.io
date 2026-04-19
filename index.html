@@ -1599,7 +1599,7 @@ function saveAfterQuotaRecovery(){
   for(const id of Object.keys(S.chats)){if(S.chats[id]?.chatBg){S.chats[id].chatBg=null;}}
   if(S.settings)S.settings.customWP=null;
   if(S.myProfile)S.myProfile.momentsCover=null;
-  try{saveTryRaw();if(S.currentChatId)applyChatBg(S.chats[S.currentChatId]?.chatBg||null);toast('⚠️ 浏览器存储已满：已移除聊天背景与动态封面图。与 DeepSeek API 额度无关，可照常聊天。');return true;}catch(e1){}
+  try{saveTryRaw();if(S.currentChatId)applyChatBg(S.chats[S.currentChatId]?.chatBg||null);showStorageWarningModal&&showStorageWarningModal(100);toast('⚠️ 存储已满：已自动删除聊天背景图和朋友圈封面图。建议立即导出备份！');return true;}catch(e1){}
   for(const id of Object.keys(S.chats)){const m=S.chats[id]?.messages;if(m&&m.length>400)S.chats[id].messages=m.slice(-400);}
   try{saveTryRaw();toast('⚠️ 存储仍不足：已自动删减各会话较早记录（每会话最多保留最近400条）。');return true;}catch(e2){}
   for(const mo of S.moments||[]){if(mo.photos?.length)mo.photos=[];}
@@ -1616,7 +1616,7 @@ function save(){
     if(ok){
       scheduleCloudSync();
       const usage=getStorageUsage();
-      if(usage.percent>80&&!S._storageWarnShown){S._storageWarnShown=true;toast('⚠️ 本地存储已用 '+usage.percent+'%，建议导出备份或清理图片');}
+      if(usage.percent>80&&!S._storageWarnShown){S._storageWarnShown=true;showStorageWarningModal(usage.percent);}
     }
     return ok;
   }
@@ -2573,6 +2573,7 @@ function splitIntoChunksByLength(raw,minParts,maxParts){
 function sanitizeAssistantChunkText(text){
   return String(text||'')
     .replace(/<\s*\/?\s*next(?:[\s_-]*(?:msg|message))\s*\/?\s*>/ig,' ')
+    .replace(/<\/?(p|br|div|span|strong|em|b|i|ul|ol|li|h[1-6]|blockquote|pre|code|section|article|header|footer)[^>]*>/gi,'')
     .replace(/\n{3,}/g,'\n\n')
     .trim();
 }
@@ -3563,13 +3564,13 @@ async function callAPIRaw(prompt){
   const{apiKey,apiBase}=S.settings;
   // 短文本生成任务（留言/评论/动态）尽量选对话模型，避免冗长推理混入正文
   const shortModel=resolveShortTaskModel();
-  const resp=await fetch(`${apiBase}/chat/completions`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:shortModel,messages:[{role:'system',content:'你是角色扮演助手。严格只输出角色说的内容正文，不输出任何分析、推理过程、引号包裹、前缀标注或说明文字。如果内容被引号包裹，去掉引号直接输出。'},{role:'user',content:prompt}],max_tokens:200,stream:false,temperature:0.92})});
+  const resp=await fetch(`${apiBase}/chat/completions`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:shortModel,messages:[{role:'system',content:'你是角色扮演助手。严格只输出角色说的内容正文，不输出任何分析、推理过程、引号包裹、前缀标注或说明文字。如果内容被引号包裹，去掉引号直接输出。'},{role:'user',content:prompt}],max_tokens:600,stream:false,temperature:0.92})});
   if(!resp.ok){
     const er=await resp.json().catch(()=>({}));
     throw new Error(er.error?.message||`HTTP ${resp.status}`);
   }
   const data=await resp.json();
-  const t=String(data.choices?.[0]?.message?.content||'').trim();
+  const t=String(extractAPIChoiceText(data.choices?.[0])||'').trim();
   if(!t)throw new Error('模型未返回正文，请检查API Key是否正确');
   return t.replace(/^["「『【]|["」』】]$/g,'').trim();
 }
@@ -4023,6 +4024,23 @@ function saveGlobalSettings(){
   save();closeMod('global-settings-modal');toast('✅ 设置已保存');
 }
 function togAK(){const i=document.getElementById('ak-inp');i.type=i.type==='password'?'text':'password';}
+function showStorageWarningModal(percent){
+  const existing=document.getElementById('storage-warn-modal');
+  if(existing)existing.remove();
+  const d=document.createElement('div');
+  d.id='storage-warn-modal';
+  d.style='position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px';
+  d.innerHTML=`<div style="background:#fff;border-radius:20px;padding:24px;max-width:320px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.2)">
+    <div style="font-size:22px;text-align:center;margin-bottom:8px">⚠️</div>
+    <div style="font-size:16px;font-weight:800;color:#333;text-align:center;margin-bottom:10px">本地存储快满了（${percent}%）</div>
+    <div style="font-size:13px;color:#666;line-height:1.6;margin-bottom:18px">浏览器本地存储只有约 5MB。如果继续存满，<strong>聊天背景图、朋友圈封面图等图片会被自动删除</strong>以腾出空间。<br><br>建议现在导出备份，防止数据丢失。</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button onclick="exportAllData();document.getElementById('storage-warn-modal').remove()" style="background:linear-gradient(135deg,#FF6B9D,#FFB3CC);color:#fff;border:none;border-radius:14px;padding:12px;font-size:14px;font-weight:700;cursor:pointer">📦 立即导出备份</button>
+      <button onclick="document.getElementById('storage-warn-modal').remove()" style="background:#f5f5f5;color:#888;border:none;border-radius:14px;padding:10px;font-size:13px;cursor:pointer">我知道了，暂不备份</button>
+    </div>
+  </div>`;
+  document.body.appendChild(d);
+}
 function getStorageUsage(){
   try{const data=localStorage.getItem('aichat-v4')||'';const usedBytes=new Blob([data]).size;const estimatedMax=5*1024*1024;return{usedBytes,estimatedMax,percent:Math.round(usedBytes/estimatedMax*100)};}
   catch(e){return{usedBytes:0,estimatedMax:5242880,percent:0};}
