@@ -615,7 +615,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 
 <!-- BOTTOM TAB -->
 <div id="tabbar">
-  <div class="tab on" data-page="pg-msg" onclick="switchTab('pg-msg',this)"><div class="ticon">💬</div><div class="tlbl">消息</div></div>
+  <div class="tab on" data-page="pg-msg" onclick="switchTab('pg-msg',this)"><div class="ticon" style="position:relative">💬<span id="msg-tab-badge" style="position:absolute;top:-5px;right:-6px;background:var(--pk);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;display:none"></span></div><div class="tlbl">消息</div></div>
   <div class="tab" data-page="pg-contacts" onclick="switchTab('pg-contacts',this)"><div class="ticon">👥</div><div class="tlbl">列表</div></div>
   <div class="tab" data-page="pg-moments" onclick="switchTab('pg-moments',this)"><div class="ticon">🌸</div><div class="tlbl">动态</div></div>
   <div class="tab" data-page="pg-settings" onclick="switchTab('pg-settings',this)"><div class="ticon">👤</div><div class="tlbl">我</div></div>
@@ -1271,7 +1271,21 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
         <button class="btn btn-s" onclick="quoteActiveMessage()">引用</button>
         <button class="btn btn-s" onclick="startMultiSelectFromActive()">多选</button>
         <button class="btn btn-s" id="msg-regen-btn" onclick="regenerateActiveMessage()" style="display:none;grid-column:1 / -1;background:var(--lav);color:#7c5cbf">🔄 重新生成</button>
+        <button class="btn btn-s" id="msg-edit-btn" onclick="openEditActiveMessage()" style="display:none;grid-column:1 / -1;background:#e8f4ff;color:#3a7bd5">✏️ 编辑并重发</button>
         <button class="btn btn-s" onclick="recallActiveMessage()" style="grid-column:1 / -1;color:var(--red)">撤回</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="msg-edit-modal" class="moverlay" style="display:none" onclick="closeMod('msg-edit-modal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="mhdr"><div class="mtitle">编辑消息</div><button class="mcls" onclick="closeMod('msg-edit-modal')">✕</button></div>
+    <div class="mbody">
+      <textarea id="msg-edit-inp" class="fi" style="min-height:100px;resize:vertical;width:100%;box-sizing:border-box"></textarea>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-p" onclick="confirmEditAndRegen()" style="flex:1">重新生成</button>
+        <button class="btn" onclick="closeMod('msg-edit-modal')" style="flex:1">取消</button>
       </div>
     </div>
   </div>
@@ -1834,9 +1848,12 @@ function renderChatList(){
     div.className='ci'+(isPinned?' pinned':'');
     div.onclick=()=>openChat(charId);
     const pinIcon=isPinned?'📌':'📍';
-    div.innerHTML=`<div class="ci-av">${avc}<div class="online-dot"></div></div><div class="ci-info"><div class="ci-name">${esc(dispName)}</div><div class="ci-prev">${esc(preview)}</div></div><div class="ci-meta"><div class="ci-time">${ts}</div><button class="ci-pin-btn" title="${isPinned?'取消置顶':'置顶'}" onclick="event.stopPropagation();togglePinChat('${charId}')">${isPinned?'📌':'⬜'}</button></div>`;
+    const unread=S.chats[charId]?.unread||0;
+    const badgeHtml=unread>0?`<div class="ci-badge">${unread>99?'99+':unread}</div>`:'';
+    div.innerHTML=`<div class="ci-av">${avc}<div class="online-dot"></div></div><div class="ci-info"><div class="ci-name">${esc(dispName)}</div><div class="ci-prev">${esc(preview)}</div></div><div class="ci-meta"><div class="ci-time">${ts}</div>${badgeHtml}<button class="ci-pin-btn" title="${isPinned?'取消置顶':'置顶'}" onclick="event.stopPropagation();togglePinChat('${charId}')">${isPinned?'📌':'⬜'}</button></div>`;
     wrap.appendChild(div);
   });
+  updateMsgTabBadge();
 }
 
 // ============================================================
@@ -1868,7 +1885,10 @@ function openChat(charId){
   // Together banner
   updTogBanner();
   renderQuoteDraft();
+  clearMultiSelectState();
   renderMultiSelectBar();
+  if(S.chats[charId])S.chats[charId].unread=0;
+  updateMsgTabBadge();
   renderMsgs();
   document.getElementById('chat-view').classList.add('open');
 }
@@ -2241,7 +2261,50 @@ function openMessageAction(chatId,msgId){
   document.getElementById('msg-action-preview').textContent=getMessagePlainText(msg,chatId)||'';
   const regenBtn=document.getElementById('msg-regen-btn');
   if(regenBtn)regenBtn.style.display=msg.role==='assistant'?'block':'none';
+  const editBtn=document.getElementById('msg-edit-btn');
+  if(editBtn)editBtn.style.display=msg.role==='user'?'block':'none';
   document.getElementById('msg-action-modal').style.display='flex';
+}
+function updateMsgTabBadge(){
+  const total=Object.values(S.chats).reduce((s,c)=>s+(c.unread||0),0);
+  const badge=document.getElementById('msg-tab-badge');
+  if(!badge)return;
+  badge.style.display=total>0?'inline-block':'none';
+  badge.textContent=total>99?'99+':String(total);
+}
+function openEditActiveMessage(){
+  const act=getActiveMessage();
+  if(!act||act.msg.role!=='user')return;
+  const saved={chatId:act.chatId,msgId:act.msg.id};
+  closeMod('msg-action-modal');
+  S._messageAction=saved;
+  document.getElementById('msg-edit-inp').value=act.msg.content||'';
+  document.getElementById('msg-edit-modal').style.display='flex';
+  setTimeout(()=>{const el=document.getElementById('msg-edit-inp');if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);}},50);
+}
+async function confirmEditAndRegen(){
+  const act=S._messageAction;
+  if(!act)return;
+  const newText=document.getElementById('msg-edit-inp').value.trim();
+  if(!newText){toast('内容不能为空');return;}
+  closeMod('msg-edit-modal');
+  const chat=S.chats[act.chatId];if(!chat)return;
+  if(S.streaming){toast('正在生成中，请稍候');return;}
+  const idx=chat.messages.findIndex(m=>m.id===act.msgId);
+  if(idx===-1)return;
+  chat.messages[idx].content=newText;
+  chat.messages.splice(idx+1);
+  S.streaming=true;renderMsgs();showTyping(true);
+  try{
+    const res=await callChatAPI(act.chatId,chat,null,'reply',(c,t)=>updateStreamingBubble(c,t));
+    await appendAssistantResponse(act.chatId,chat,res,{source:'reply'});
+  }catch(err){
+    if(err.name==='AbortError'){toast('已停止生成');}
+    else{toast('❌ '+err.message);}
+    renderMsgs();
+  }
+  showTyping(false);S.streaming=false;S.abortCtrl=null;
+  save();
 }
 function getUserTimezone(){
   const tz=S.settings.timezone||'auto';
@@ -2484,6 +2547,7 @@ async function appendAssistantResponse(charId,chat,res,opts={}){
       auto:opts.source==='auto'
     });
     if(S.currentChatId===charId)renderMsgs();
+    else{chat.unread=(chat.unread||0)+1;updateMsgTabBadge();}
     renderChatList();
     save();
   }
@@ -3146,11 +3210,21 @@ async function manualSummarize(){
 // ============================================================
 function loadMomentsCover(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const img=document.getElementById('moments-cover-img');img.src=ev.target.result;img.style.display='block';document.getElementById('moments-cover-bg').style.background='none';S.myProfile.momentsCover=ev.target.result;save();};r.readAsDataURL(f);}
 
+let _momentPage=1;
 function renderMoments(){
   const feed=document.getElementById('moments-feed');
-  if(!S.moments.length){feed.innerHTML='<div style="text-align:center;padding:30px;color:var(--gl);font-size:14px;font-weight:600">还没有动态，来发第一条吧 🌸</div>';return;}
+  const all=[...S.moments].reverse();
+  if(!all.length){feed.innerHTML='<div style="text-align:center;padding:30px;color:var(--gl);font-size:14px;font-weight:600">还没有动态，来发第一条吧 🌸</div>';return;}
+  const PAGE=10;
+  const visible=all.slice(0,_momentPage*PAGE);
   feed.innerHTML='';
-  [...S.moments].reverse().forEach(m=>feed.appendChild(buildMomentCard(m)));
+  visible.forEach(m=>feed.appendChild(buildMomentCard(m)));
+  if(all.length>visible.length){
+    const more=document.createElement('div');
+    more.style='text-align:center;padding:16px 0 8px';
+    more.innerHTML=`<button class="btn btn-s" onclick="_momentPage++;renderMoments()">加载更多（还有 ${all.length-visible.length} 条）</button>`;
+    feed.appendChild(more);
+  }
 }
 
 let _shareMomentId=null;
@@ -3515,7 +3589,7 @@ function postMoment(){
   };
   S.moments.push(m);_composeTempPhotos=[];
   delete document.getElementById('compose-modal').dataset.aiAuthorId;
-  save();closeMod('compose-modal');renderMoments();
+  _momentPage=1;save();closeMod('compose-modal');renderMoments();
   switchTab('pg-moments',document.querySelector('.tab[data-page="pg-moments"]'));
   toast('🌸 动态已发布');
   void runFriendsReactToNewMoment(m);
@@ -3525,6 +3599,7 @@ function postMoment(){
 // ============================================================
 // GUESTBOOK
 // ============================================================
+let _gbPage=1;
 function renderGuestbook(){
   // 更新动态页入口预览文字
   const prev=document.getElementById('gb-count-preview');
@@ -3536,7 +3611,10 @@ function renderGuestbook(){
     list.innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--gl);font-size:14px;font-weight:600">还没有留言 💌<br><br><button class=\"btn btn-p\" onclick=\"openGuestbookPickFriend()\" style=\"font-size:13px\">✨ 邀请朋友留言</button></div>';
     return;
   }
-  list.innerHTML=[...S.guestbook].reverse().map(g=>{
+  const PAGE=15;
+  const all=[...S.guestbook].reverse();
+  const visible=all.slice(0,_gbPage*PAGE);
+  list.innerHTML=visible.map(g=>{
     const char=S.chars[g.charId];
     const avc=char?.avatarImg
       ? `<img src="${char.avatarImg}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
@@ -3564,6 +3642,9 @@ function renderGuestbook(){
       </div>
     `;
   }).join('');
+  if(all.length>visible.length){
+    list.innerHTML+=`<div style="text-align:center;padding:16px 0 8px"><button class="btn btn-s" onclick="_gbPage++;renderGuestbook()">加载更多（还有 ${all.length-visible.length} 条）</button></div>`;
+  }
 }
 function openGuestbookPage(){
   renderGuestbook();
@@ -3610,7 +3691,7 @@ ${context}
     const res=await callAPIRaw(prompt);
     if(!String(res).trim()){toast('生成内容为空');return;}
     S.guestbook.push({id:'gb'+Date.now(),charId,text:res,ts:Date.now(),reply:'',charReply:''});
-    save();renderGuestbook();toast('💌 '+char.name+' 留言了！');
+    _gbPage=1;save();renderGuestbook();toast('💌 '+char.name+' 留言了！');
   }catch(e){toast('❌ '+e.message);}
 }
 
