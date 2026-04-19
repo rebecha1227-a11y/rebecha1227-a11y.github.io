@@ -2536,7 +2536,7 @@ async function callChatAPI(charId,chat,customPrompt,purpose='reply',onChunk){
 function splitIntoChunksByLength(raw,minParts,maxParts){
   const text=String(raw||'').trim();
   if(!text)return[];
-  const pieces=text.match(/[^。！？!?\n]+[。！？!?\n]?/g)?.map(s=>s.trim()).filter(Boolean)||[text];
+  const pieces=text.match(/[^。！？!?\n）\)\]\}】」』""]+[。！？!?\n）\)\]\}】」』""]?/g)?.map(s=>s.trim()).filter(Boolean)||[text];
   const desired=Math.max(minParts,Math.min(maxParts,Math.ceil(text.length/22)));
   if(pieces.length>=desired){
     const out=[];
@@ -2559,8 +2559,8 @@ function splitIntoChunksByLength(raw,minParts,maxParts){
   for(let i=0;i<target-1;i++){
     let cut=Math.round(text.length*(i+1)/target);
     for(let offset=0;offset<12&&cut+offset<text.length-1;offset++){
-      if(/[。！？!?\n]/.test(text[cut+offset])){cut=cut+offset+1;break;}
-      if(cut-offset>start&&/[。！？!?\n]/.test(text[cut-offset])){cut=cut-offset+1;break;}
+      if(/[。！？!?\n）\)\]\}】」』""]/.test(text[cut+offset])){cut=cut+offset+1;break;}
+      if(cut-offset>start&&/[。！？!?\n）\)\]\}】」』""]/.test(text[cut-offset])){cut=cut-offset+1;break;}
     }
     const part=text.slice(start,cut).trim();
     if(part)out.push(part);
