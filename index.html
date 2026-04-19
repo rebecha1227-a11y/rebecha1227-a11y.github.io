@@ -2354,7 +2354,7 @@ async function confirmEditAndRegen(){
   S.streaming=true;renderMsgs();showTyping(true);
   try{
     const res=await callChatAPI(editCharId,chat,null,'reply',(c,t)=>{if(S.currentChatId===editCharId)updateStreamingBubble(c,t);});
-    await appendAssistantResponse(editCharId,chat,res,{source:'reply'});
+    await appendAssistantResponse(editCharId,chat,res,{source:'reply',forceSingle:true});
   }catch(err){
     if(err.name==='AbortError'){toast('已停止生成');}
     else{toast('❌ '+err.message);}
@@ -2400,7 +2400,7 @@ async function sendMsg(){
   try{
     const res=await callChatAPI(sendCharId,chat,null,'reply',(c,t)=>{if(S.currentChatId===sendCharId)updateStreamingBubble(c,t);});
     um.read=true;
-    await appendAssistantResponse(sendCharId,chat,res,{source:'reply'});
+    await appendAssistantResponse(sendCharId,chat,res,{source:'reply',forceSingle:true});
     if(chat.autoSum) await checkAutoSum(chat);
   }catch(err){
     chat.messages.pop();
