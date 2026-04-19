@@ -438,6 +438,18 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 /* HEARTS & POKE */
 .hfly{position:fixed;pointer-events:none;z-index:9999;font-size:20px;animation:hf 1.2s ease-out forwards}
 @keyframes hf{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-80px) scale(.5)}}
+.stream-cursor{display:inline-block;animation:blink .9s step-end infinite;color:var(--pk);font-weight:700}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.ci-pin{font-size:13px;margin-left:4px;color:var(--pk)}
+.ci.pinned .ci-name::after{content:' 📌';font-size:11px}
+.ci-pin-btn{background:none;border:none;font-size:16px;cursor:pointer;padding:4px 6px;opacity:.5;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.ci-pin-btn:hover{opacity:1}
+.gs-search-btn{background:none;border:none;font-size:18px;cursor:pointer;padding:4px 8px;-webkit-tap-highlight-color:transparent}
+#global-search-results .gs-res-item{padding:10px 14px;border-bottom:1px solid var(--pkb);cursor:pointer}
+#global-search-results .gs-res-item:active{background:var(--rose)}
+.gs-res-char{font-size:11px;font-weight:700;color:var(--pk);margin-bottom:2px}
+.gs-res-preview{font-size:13px;color:var(--black);line-height:1.4}
+.gs-res-time{font-size:11px;color:var(--gl);margin-top:2px}
 #poke-toast{position:fixed;top:74px;left:50%;transform:translateX(-50%) scale(.85);background:rgba(255,107,157,.92);color:#fff;padding:9px 20px;border-radius:28px;font-size:14px;font-weight:700;z-index:9998;opacity:0;transition:all .28s cubic-bezier(.34,1.56,.64,1);pointer-events:none;backdrop-filter:blur(10px)}
 #poke-toast.show{opacity:1;transform:translateX(-50%) scale(1)}
 #toast{position:fixed;bottom:calc(80px + var(--sb));left:50%;transform:translateX(-50%) translateY(50px);background:rgba(45,27,37,.82);backdrop-filter:blur(10px);color:#fff;padding:10px 20px;border-radius:22px;font-size:14px;font-weight:700;z-index:9999;transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;pointer-events:none;border:1px solid rgba(255,107,157,.3)}
@@ -459,7 +471,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
   <!-- PAGE 1: MESSAGES -->
   <div class="page active" id="pg-msg">
     <div class="pg-hdr">
-      <div style="width:32px"></div>
+      <button class="pg-btn gs-search-btn" onclick="openGlobalSearch()">🔍</button>
       <div class="pg-title">消息</div>
       <button class="pg-btn" onclick="openNewChatPicker()">✏️</button>
     </div>
@@ -868,7 +880,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
       <div class="fg"><label class="fl">分组</label><select class="fsel" id="ce-group"></select></div>
       <div class="fg"><label class="fl">相识日期</label><input class="fi" type="date" id="ce-metat"></div>
     </div>
-    <div class="mfoot"><button class="btn btn-s" onclick="closeMod('chared-modal')">取消</button><button class="btn btn-p" onclick="saveChar()">💾 保存</button></div>
+    <div class="mfoot"><button class="btn btn-s" onclick="closeMod('chared-modal')">取消</button><button class="btn btn-s" id="clone-char-btn" onclick="cloneCurrentChar()" style="display:none">🗐 克隆</button><button class="btn btn-p" onclick="saveChar()">💾 保存</button></div>
   </div>
 </div>
 
@@ -1258,8 +1270,19 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
         <button class="btn btn-s" onclick="toggleFavoriteActiveMessage()">收藏</button>
         <button class="btn btn-s" onclick="quoteActiveMessage()">引用</button>
         <button class="btn btn-s" onclick="startMultiSelectFromActive()">多选</button>
+        <button class="btn btn-s" id="msg-regen-btn" onclick="regenerateActiveMessage()" style="display:none;grid-column:1 / -1;background:var(--lav);color:#7c5cbf">🔄 重新生成</button>
         <button class="btn btn-s" onclick="recallActiveMessage()" style="grid-column:1 / -1;color:var(--red)">撤回</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div id="global-search-modal" class="moverlay" style="display:none" onclick="closeMod('global-search-modal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="mhdr"><div class="mtitle">🔍 全局搜索</div><button class="mcls" onclick="closeMod('global-search-modal')">✕</button></div>
+    <div class="mbody">
+      <div class="fg"><input class="fi" id="gs-search-inp" placeholder="搜索所有聊天记录…" oninput="runGlobalSearch()"></div>
+      <div id="global-search-results" style="max-height:320px;overflow-y:auto;margin-top:4px"></div>
     </div>
   </div>
 </div>
@@ -1786,8 +1809,11 @@ function renderChatList(){
   const allChatIds=Object.keys(S.chats);
   if(!allChatIds.length){hint&&(hint.style.display='');return;}
   hint&&(hint.style.display='none');
-  // Sort by last message
+  // Sort: pinned first, then by last message time
   const sorted=allChatIds.sort((a,b)=>{
+    const pa=S.chars[a]?.pinned?1:0;
+    const pb=S.chars[b]?.pinned?1:0;
+    if(pa!==pb)return pb-pa;
     const la=S.chats[a]?.messages?.at(-1)?.timestamp||0;
     const lb=S.chats[b]?.messages?.at(-1)?.timestamp||0;
     return lb-la;
@@ -1803,10 +1829,12 @@ function renderChatList(){
     const ts=lm?fmtShort(new Date(lm.timestamp)):'';
     const dispName=char.remark||char.name;
     const avc=char.avatarImg?`<img src="${char.avatarImg}" alt="">`:(char.emoji||'🤖');
+    const isPinned=!!char.pinned;
     const div=document.createElement('div');
-    div.className='ci';
+    div.className='ci'+(isPinned?' pinned':'');
     div.onclick=()=>openChat(charId);
-    div.innerHTML=`<div class="ci-av">${avc}<div class="online-dot"></div></div><div class="ci-info"><div class="ci-name">${esc(dispName)}</div><div class="ci-prev">${esc(preview)}</div></div><div class="ci-meta"><div class="ci-time">${ts}</div></div>`;
+    const pinIcon=isPinned?'📌':'📍';
+    div.innerHTML=`<div class="ci-av">${avc}<div class="online-dot"></div></div><div class="ci-info"><div class="ci-name">${esc(dispName)}</div><div class="ci-prev">${esc(preview)}</div></div><div class="ci-meta"><div class="ci-time">${ts}</div><button class="ci-pin-btn" title="${isPinned?'取消置顶':'置顶'}" onclick="event.stopPropagation();togglePinChat('${charId}')">${isPinned?'📌':'⬜'}</button></div>`;
     wrap.appendChild(div);
   });
 }
@@ -2110,6 +2138,111 @@ function removeFavoriteAndRefresh(chatId,msgId){
 // ============================================================
 // SEND
 // ============================================================
+// ---- PIN / CLONE / REGEN / GLOBAL SEARCH ----
+function togglePinChat(charId){
+  const char=S.chars[charId];if(!char)return;
+  char.pinned=!char.pinned;
+  save();renderChatList();
+  toast(char.pinned?'📌 已置顶':'已取消置顶');
+}
+function cloneChar(charId){
+  const src=S.chars[charId];if(!src)return;
+  const newId='char_'+Date.now();
+  S.chars[newId]={...JSON.parse(JSON.stringify(src)),id:newId,name:(src.name||'新角色')+'（复制）',remark:'',createdAt:Date.now(),pinned:false};
+  S.chats[newId]={messages:[],systemPrompt:'',useMem:true,autoSum:false,sumTrig:20,sumStyle:'overall',chatMem:'',lastSumAt:0,bubbleStyle:'default',customCSS:'',chatBg:null,typingTxt:'',pokeTxt:'',showUserAvatar:true,showAssistantAvatar:true,showStatus:true,statusText:'',allowMultiMsg:true,autoMsgEnabled:false,autoMsgEvery:3,autoMsgUnit:'hour',timelineMode:'real',virtualTimeLabel:'晚上',realTimeResumeMode:'continue',lastAutoMsgAt:0,lastTimelineAnchor:0};
+  save();renderGroupTabs();renderContactList();renderChatList();
+  toast('🗐 角色已克隆：'+S.chars[newId].name);
+  openCharEditor(newId);
+}
+function cloneCurrentChar(){
+  const id=document.getElementById('editing-char-id').value;
+  if(!id){toast('请先保存角色再克隆');return;}
+  closeMod('chared-modal');
+  cloneChar(id);
+}
+async function regenerateActiveMessage(){
+  const act=getActiveMessage();if(!act)return;
+  if(act.msg.role!=='assistant')return;
+  const chat=S.chats[act.chatId];if(!chat)return;
+  if(S.streaming){toast('正在生成中，请稍候');return;}
+  closeMod('msg-action-modal');
+  const idx=chat.messages.findIndex(m=>m.id===act.msg.id);
+  if(idx===-1)return;
+  chat.messages.splice(idx);
+  S.streaming=true;renderMsgs();showTyping(true);
+  try{
+    const res=await callChatAPI(act.chatId,chat,null,'reply',(c,t)=>updateStreamingBubble(c,t));
+    showTyping(false);
+    await appendAssistantResponse(act.chatId,chat,res,{source:'reply'});
+  }catch(err){
+    if(err.name==='AbortError'){toast('已停止生成');}
+    else{toast('❌ '+err.message);}
+  }
+  renderMsgs();renderChatList();
+  showTyping(false);S.streaming=false;S.abortCtrl=null;
+  if(!save())toast('⚠️ 未能保存');
+}
+function openGlobalSearch(){
+  document.getElementById('gs-search-inp').value='';
+  document.getElementById('global-search-results').innerHTML='';
+  document.getElementById('global-search-modal').style.display='flex';
+  setTimeout(()=>document.getElementById('gs-search-inp').focus(),100);
+}
+function runGlobalSearch(){
+  const q=(document.getElementById('gs-search-inp').value||'').trim().toLowerCase();
+  const res=document.getElementById('global-search-results');
+  if(!q){res.innerHTML='<div style="padding:14px;color:var(--gl);text-align:center;font-size:13px">输入关键词开始搜索</div>';return;}
+  const hits=[];
+  for(const charId of Object.keys(S.chats)){
+    const char=S.chars[charId];if(!char)continue;
+    const msgs=S.chats[charId].messages||[];
+    for(const m of msgs){
+      if(m.recalled)continue;
+      const text=getMessagePlainText(m,charId).toLowerCase();
+      if(text.includes(q))hits.push({charId,msg:m,char});
+    }
+  }
+  if(!hits.length){res.innerHTML='<div style="padding:14px;color:var(--gl);text-align:center;font-size:13px">没有找到相关消息</div>';return;}
+  hits.sort((a,b)=>(b.msg.timestamp||0)-(a.msg.timestamp||0));
+  res.innerHTML=hits.slice(0,50).map(h=>{
+    const name=h.char.remark||h.char.name;
+    const preview=getMessagePlainText(h.msg,h.charId).slice(0,60);
+    const ts=fmtShort(new Date(h.msg.timestamp||0));
+    return `<div class="gs-res-item" onclick="closeMod('global-search-modal');openChat('${h.charId}')"><div class="gs-res-char">${esc(name)}</div><div class="gs-res-preview">${esc(preview)}</div><div class="gs-res-time">${ts}</div></div>`;
+  }).join('');
+}
+function updateStreamingBubble(content,thinking){
+  let el=document.getElementById('streaming-bubble');
+  if(!el){
+    showTyping(false);
+    el=document.createElement('div');
+    el.id='streaming-bubble';
+    el.className='mrow assistant';
+    const char=S.chars[S.currentChatId]||{};
+    const chat=S.chats[S.currentChatId]||{};
+    const showAv=chat.showAssistantAvatar!==false;
+    const avHtml=showAv?`<div class="mav">${char.avatarImg?`<img src="${char.avatarImg}" alt="">`:(char.emoji||'🤖')}</div>`:'';
+    el.innerHTML=`${avHtml}<div class="bwrap"><div class="bubble" id="stream-bub-text" style="font-size:${S.settings.fontSize||16}px;white-space:pre-wrap"></div></div>`;
+    const ti=document.getElementById('typ-ind');
+    document.getElementById('cv-msgs').insertBefore(el,ti);
+  }
+  const bub=document.getElementById('stream-bub-text');
+  if(bub){
+    bub.textContent=content;
+    let cursor=bub.querySelector('.stream-cursor');
+    if(!cursor){cursor=document.createElement('span');cursor.className='stream-cursor';cursor.textContent='▋';bub.appendChild(cursor);}
+  }
+  scrollBot();
+}
+function openMessageAction(chatId,msgId){
+  const msg=getMessageById(chatId,msgId);
+  if(!msg||msg.recalled)return;
+  S._messageAction={chatId,msgId};
+  document.getElementById('msg-action-preview').textContent=getMessagePlainText(msg,chatId)||'';
+  const regenBtn=document.getElementById('msg-regen-btn');
+  if(regenBtn)regenBtn.style.display=msg.role==='assistant'?'block':'none';
+  document.getElementById('msg-action-modal').style.display='flex';
+}
 function getUserTimezone(){
   const tz=S.settings.timezone||'auto';
   return tz==='auto'?Intl.DateTimeFormat().resolvedOptions().timeZone:tz;
@@ -2141,10 +2274,10 @@ async function sendMsg(){
   const draft=S._quoteDraft&&S._quoteDraft.chatId===S.currentChatId?S._quoteDraft:null;
   const um={id:genId('msg'),role:'user',content:text,timestamp:Date.now(),read:false};
   if(draft){um.quoteText=draft.text;um.quoteAuthor=draft.author;}
-  chat.messages.push(um);renderMsgs();showTyping(true);S.streaming=true;
+  chat.messages.push(um);renderMsgs();S.streaming=true;showTyping(true);
   clearQuoteDraft();
   try{
-    const res=await callChatAPI(S.currentChatId,chat);
+    const res=await callChatAPI(S.currentChatId,chat,null,'reply',(c,t)=>updateStreamingBubble(c,t));
     um.read=true;
     await appendAssistantResponse(S.currentChatId,chat,res,{source:'reply'});
     if(chat.autoSum) await checkAutoSum(chat);
@@ -2212,7 +2345,7 @@ function buildSystemPrompt(charId,chat,purpose){
   if(chat.allowMultiMsg)parts.push('【发消息方式】为了增强真实互动感，你在普通私聊回复时，优先连续发送 2 到 5 条较短消息；只有内容特别短、特别直接时才发 1 条。多条消息应像真人连续发消息，长度有短有长，不要每条都一样长。如果要分成多条，必须只用 <NEXT_MSG> 作为消息分隔符，不要编号，不要解释，不要说“第1条/第2条”。');
   return parts.join('\n\n')||'你是温柔体贴的AI伴侣，请用中文回复。';
 }
-async function callChatAPI(charId,chat,customPrompt,purpose='reply'){
+async function callChatAPI(charId,chat,customPrompt,purpose='reply',onChunk){
   const{apiKey,apiBase,model,temperature,maxTokens}=S.settings;
   const sp=buildSystemPrompt(charId,chat,purpose);
   const hist=(chat.messages||[]).slice(-100).filter(m=>!m.recalled).map(m=>({role:m.role,content:getMessagePlainText(m,charId)}));
@@ -2244,10 +2377,40 @@ async function callChatAPI(charId,chat,customPrompt,purpose='reply'){
     msgs.push({role:'system',content:exact});
   }
   const ctrl=new AbortController();S.abortCtrl=ctrl;
-  const resp=await fetch(`${apiBase}/chat/completions`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model,messages:msgs,temperature:parseFloat(temperature)||1,max_tokens:parseInt(maxTokens)||4096,stream:false}),signal:ctrl.signal});
+  const resp=await fetch(`${apiBase}/chat/completions`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model,messages:msgs,temperature:parseFloat(temperature)||1,max_tokens:parseInt(maxTokens)||4096,stream:!!onChunk}),signal:ctrl.signal});
   if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${resp.status}`);}
-  const data=await resp.json();const ch=data.choices?.[0];
-  return{content:ch?.message?.content||'',thinking:ch?.message?.reasoning_content||null};
+  if(!onChunk){
+    const data=await resp.json();const ch=data.choices?.[0];
+    return{content:ch?.message?.content||'',thinking:ch?.message?.reasoning_content||null};
+  }
+  const reader=resp.body.getReader();
+  const decoder=new TextDecoder();
+  let buf='',content='',thinking='';
+  try{
+    while(true){
+      const{value,done}=await reader.read();
+      if(done)break;
+      buf+=decoder.decode(value,{stream:true});
+      const lines=buf.split('\n');
+      buf=lines.pop()||'';
+      for(const line of lines){
+        if(!line.startsWith('data:'))continue;
+        const raw=line.slice(5).trim();
+        if(raw==='[DONE]')continue;
+        try{
+          const d=JSON.parse(raw);
+          const delta=d.choices?.[0]?.delta;
+          if(!delta)continue;
+          if(delta.reasoning_content)thinking+=delta.reasoning_content;
+          if(delta.content)content+=delta.content;
+          onChunk(content,thinking||null);
+        }catch{}
+      }
+    }
+  }finally{
+    reader.releaseLock();
+  }
+  return{content,thinking:thinking||null};
 }
 function splitIntoChunksByLength(raw,minParts,maxParts){
   const text=String(raw||'').trim();
