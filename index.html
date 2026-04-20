@@ -40,6 +40,7 @@ body{font-family:var(--font);background:var(--bg);height:100dvh;display:flex;fle
   display:flex;align-items:stretch;flex-shrink:0;
   position:relative;z-index:1001;
 }
+body.chat-open #tabbar{display:none}
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s}
 .tab .ticon{font-size:22px;transition:transform .2s}
 .tab .tlbl{font-size:10px;font-weight:700;color:var(--gl);transition:color .2s}
@@ -75,7 +76,7 @@ body{font-family:var(--font);background:var(--bg);height:100dvh;display:flex;fle
 .ci-badge{background:var(--pk);color:#fff;border-radius:20px;font-size:11px;font-weight:700;padding:1px 7px;min-width:18px;text-align:center}
 
 /* ===== CHAT VIEW ===== */
-#chat-view{position:fixed;inset:0;z-index:300;display:none;flex-direction:column;background:var(--white)}
+#chat-view{position:fixed;inset:0;z-index:3000;display:none;flex-direction:column;background:var(--white)}
 #chat-view.open{display:flex}
 #cv-hdr{padding:calc(10px + var(--st)) 12px 10px;background:rgba(255,245,248,0.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1.5px solid var(--pkb);display:flex;align-items:center;gap:10px;flex-shrink:0;position:relative;z-index:2}
 #cv-back{font-size:22px;color:var(--pk);background:none;border:none;cursor:pointer;padding:4px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
@@ -2094,12 +2095,14 @@ function openChat(charId){
   renderMsgs();
   loadDraftForCurrentChat();
   showTyping(false);
+  document.body.classList.add('chat-open');
   document.getElementById('chat-view').classList.add('open');
 }
 
 function closeChat(){
   if(document.getElementById('chat-settings-panel').classList.contains('open'))closeChatSettingsPanel();
   saveCurrentDraft();
+  document.body.classList.remove('chat-open');
   document.getElementById('chat-view').classList.remove('open');
   clearQuoteDraft();
   clearMultiSelectState();
