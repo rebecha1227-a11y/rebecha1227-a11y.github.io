@@ -228,9 +228,9 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 .contact-sig{font-size:12px;color:var(--gray);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ===== CHARACTER PROFILE ===== */
-#char-profile{position:fixed;inset:0;z-index:400;display:none;flex-direction:column;background:var(--white)}
+#char-profile{position:fixed;inset:0;z-index:3400;display:none;flex-direction:column;background:var(--white)}
 #char-profile.open{display:flex}
-.cp-cover{height:200px;position:relative;flex-shrink:0;background:linear-gradient(135deg,#FFE0EC,#E8D0FF);overflow:hidden}
+.cp-cover{height:200px;position:relative;flex-shrink:0;background:linear-gradient(135deg,#FFE0EC,#E8D0FF);overflow:visible}
 .cp-cover img{width:100%;height:100%;object-fit:cover}
 .cp-cover-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.2))}
 .cp-back{position:absolute;top:calc(12px + var(--st));left:14px;width:40px;height:40px;background:rgba(255,255,255,.8);backdrop-filter:blur(10px);border-radius:50%;border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation;z-index:2}
@@ -319,6 +319,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 
 /* ===== MODALS ===== */
 .moverlay{position:fixed;inset:0;background:rgba(45,27,37,.38);backdrop-filter:blur(6px);z-index:500;display:flex;align-items:flex-end;justify-content:center;animation:fdin .2s ease}
+#msg-action-modal,#msg-edit-modal{z-index:3500}
 @media(min-width:600px){.moverlay{align-items:center}}
 @keyframes fdin{from{opacity:0}to{opacity:1}}
 .modal{background:var(--white);border-radius:24px 24px 0 0;width:100%;max-width:560px;max-height:92dvh;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(255,107,157,.18);animation:mslide .28s cubic-bezier(.34,1.56,.64,1);overflow:hidden;border:1.5px solid var(--pkb);border-bottom:none;padding-bottom:var(--sb)}
@@ -423,7 +424,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 .ann-item{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--rose);border-radius:11px;margin-bottom:5px;border:1.5px solid var(--pkb)}
 
 /* CHAT SETTINGS PANEL */
-#chat-settings-panel{position:fixed;inset:0;z-index:600;display:none;flex-direction:column;background:var(--white)}
+#chat-settings-panel{position:fixed;inset:0;z-index:3600;display:none;flex-direction:column;background:var(--white)}
 #chat-settings-panel.open{display:flex}
 .csp-hdr{padding:calc(12px + var(--st)) 16px 12px;background:rgba(255,245,248,.94);backdrop-filter:blur(20px);border-bottom:1.5px solid var(--pkb);display:flex;align-items:center;gap:10px;flex-shrink:0}
 .csp-back{font-size:22px;color:var(--pk);background:none;border:none;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
@@ -850,7 +851,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
       </div>
       <div class="fg"><label class="fl">人设 / 角色背景</label><textarea class="fta" id="ce-persona" rows="4" placeholder="角色的背景故事、性格特点…"></textarea></div>
       <div class="fg"><label class="fl">性格标签</label>
-        <div class="chips">
+        <div class="chips" id="ce-pers-chips">
           <div class="chip pers" onclick="this.classList.toggle('on')">温柔体贴</div>
           <div class="chip pers" onclick="this.classList.toggle('on')">傲娇</div>
           <div class="chip pers" onclick="this.classList.toggle('on')">活泼开朗</div>
@@ -939,7 +940,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
             <span id="storage-text" style="position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:11px;line-height:22px;font-weight:700"></span>
           </div>
           <div id="storage-warn" style="color:var(--red);font-size:12px;margin-top:4px;display:none"></div>
-          <div class="fhint" style="margin-top:6px">浏览器 localStorage 上限约 5MB。存储快满时会自动裁剪数据。建议定期导出备份或同步到云端。</div>
+          <div class="fhint" style="margin-top:6px">当前为 IndexedDB 持久化（容量通常高于 localStorage）。存储接近上限时会自动裁剪数据，建议定期导出备份或同步到云端。</div>
         </div>
         <div class="fg">
           <label class="fl">你的时区</label>
@@ -1383,6 +1384,8 @@ let _idbWriteInFlight = false;
 let _idbDirty = false;
 let _idbPendingPayload = '';
 let _idbLastSavedPayload = '';
+let _activeStreamCtx = null;
+let _streamBubbleState = null;
 
 const AICHAT_DB_NAME = 'aichat-db';
 const AICHAT_DB_VERSION = 2;
@@ -2062,6 +2065,7 @@ function renderChatList(){
 // ============================================================
 function openChat(charId){
   saveCurrentDraft();
+  clearStreamingBubble();
   S.currentChatId=charId;
   if(S.chats[charId]?.hidden) S.chats[charId].hidden=false;
   if(!S.chats[charId]){
@@ -2104,6 +2108,7 @@ function closeChat(){
   saveCurrentDraft();
   document.body.classList.remove('chat-open');
   document.getElementById('chat-view').classList.remove('open');
+  clearStreamingBubble();
   clearQuoteDraft();
   clearMultiSelectState();
   S.currentChatId=null;
@@ -2117,13 +2122,13 @@ function applyChatBg(url){
 }
 
 function applyChatBubble(style,customCSS){
-  document.body.className='';
+  document.body.classList.remove('bub-wechat','bub-line','bub-line-yellow','bub-imsg');
   const preset=getBubblePresetById(style||'default');
   const useStyle=preset?.id||'default';
   if(preset?.type==='builtin'&&useStyle&&useStyle!=='default') document.body.classList.add('bub-'+useStyle);
   const tag=document.getElementById('custom-css-tag');
-  if(preset?.type==='custom') tag.textContent=normalizeBubbleCSSForApp(preset.css||'');
-  else tag.textContent=normalizeBubbleCSSForApp(customCSS||'');
+  const rawCSS=preset?.type==='custom'?(preset.css||''):(customCSS||'');
+  tag.textContent=filterBubbleCSSForApp(rawCSS);
 }
 
 // ============================================================
@@ -2397,17 +2402,20 @@ async function regenerateActiveMessage(){
   const idx=chat.messages.findIndex(m=>m.id===act.msg.id);
   if(idx===-1)return;
   chat.messages.splice(idx);
+  const streamCtx={chatId:act.chatId,reqId:genId('stream')};
+  _activeStreamCtx=streamCtx;
   S.streaming=true;renderMsgs();showTyping(true);
   try{
-    const res=await callChatAPI(act.chatId,chat,null,'reply',(c,t)=>updateStreamingBubble(c,t));
+    const res=await callChatAPI(act.chatId,chat,null,'reply',(c,t)=>updateStreamingBubble(streamCtx,c,t));
     showTyping(false);
-    await appendAssistantResponse(act.chatId,chat,res,{source:'reply'});
+    await appendAssistantResponse(act.chatId,chat,res,{source:'reply',streamReqId:streamCtx.reqId});
   }catch(err){
     if(err.name==='AbortError'){toast('已停止生成');}
     else{toast('❌ '+err.message);}
   }
   renderMsgs();renderChatList();
   showTyping(false);S.streaming=false;S.abortCtrl=null;
+  clearActiveStreamCtx(streamCtx.reqId);
   if(!save())toast('⚠️ 未能保存');
 }
 function openGlobalSearch(){
@@ -2439,19 +2447,44 @@ function runGlobalSearchNow(){
     return `<div class="gs-res-item" onclick="closeMod('global-search-modal');openChat('${h.charId}')"><div class="gs-res-char">${esc(name)}</div><div class="gs-res-preview">${esc(preview)}</div><div class="gs-res-time">${ts}</div></div>`;
   }).join('');
 }
-function runGlobalSearch(){
-  clearTimeout(_globalSearchTimer);
-  _globalSearchTimer=setTimeout(runGlobalSearchNow,180);
+function clearStreamingBubble(){
+  const el=document.getElementById('streaming-bubble');
+  if(el)el.remove();
+  _streamBubbleState=null;
 }
-function updateStreamingBubble(content,thinking){
+function clearActiveStreamCtx(reqId){
+  if(reqId&&_activeStreamCtx&&_activeStreamCtx.reqId!==reqId)return;
+  _activeStreamCtx=null;
+  clearStreamingBubble();
+}
+
+function updateStreamingBubble(ctx,content,thinking){
+  if(!_activeStreamCtx||!ctx||ctx.reqId!==_activeStreamCtx.reqId)return;
+  if(S.currentChatId!==ctx.chatId)return;
+  if(!document.getElementById('chat-view').classList.contains('open'))return;
+  const raw=String(content||'');
+  const chunks=raw.split(/<\s*\/?\s*next(?:[\s_-]*(?:msg|message))\s*\/?\s*>/ig);
+  const completed=chunks.slice(0,-1).map(s=>sanitizeAssistantChunkText(s)).filter(Boolean);
+  const tail=sanitizeAssistantChunkText(chunks.at(-1)||'');
+  if(!_streamBubbleState||_streamBubbleState.reqId!==ctx.reqId){
+    _streamBubbleState={reqId:ctx.reqId,committed:0};
+  }
+  const committedCount=Math.min(completed.length,4);
+  if(committedCount>_streamBubbleState.committed){
+    const newParts=completed.slice(_streamBubbleState.committed,committedCount);
+    newParts.forEach((txt,idx)=>{
+      chatAppendStreamCommitted(ctx.chatId,txt,_streamBubbleState.committed+idx===0?thinking:null);
+    });
+    _streamBubbleState.committed=committedCount;
+  }
   let el=document.getElementById('streaming-bubble');
   if(!el){
     showTyping(false);
     el=document.createElement('div');
     el.id='streaming-bubble';
     el.className='mrow assistant';
-    const char=S.chars[S.currentChatId]||{};
-    const chat=S.chats[S.currentChatId]||{};
+    const char=S.chars[ctx.chatId]||{};
+    const chat=S.chats[ctx.chatId]||{};
     const showAv=chat.showAssistantAvatar!==false;
     const avHtml=showAv?`<div class="mav">${char.avatarImg?`<img src="${char.avatarImg}" alt="">`:(char.emoji||'🤖')}</div>`:'';
     el.innerHTML=`${avHtml}<div class="bwrap"><div class="bubble" id="stream-bub-text" style="font-size:${S.settings.fontSize||16}px;white-space:pre-wrap"></div></div>`;
@@ -2460,24 +2493,18 @@ function updateStreamingBubble(content,thinking){
   }
   const bub=document.getElementById('stream-bub-text');
   if(bub){
-    const splitTagReg=/<\s*\/?\s*next(?:[\s_-]*(?:msg|message))\s*\/?\s*>/i;
-    bub.textContent=content.split(splitTagReg)[0];
+    bub.textContent=tail;
     let cursor=bub.querySelector('.stream-cursor');
     if(!cursor){cursor=document.createElement('span');cursor.className='stream-cursor';cursor.textContent='▋';bub.appendChild(cursor);}
   }
   scrollBot();
 }
-function openMessageAction(chatId,msgId){
-  const msg=getMessageById(chatId,msgId);
-  if(!msg||msg.recalled)return;
-  S._messageAction={chatId,msgId};
-  document.getElementById('msg-action-preview').textContent=getMessagePlainText(msg,chatId)||'';
-  const regenBtn=document.getElementById('msg-regen-btn');
-  if(regenBtn)regenBtn.style.display=msg.role==='assistant'?'block':'none';
-  const editBtn=document.getElementById('msg-edit-btn');
-  if(editBtn)editBtn.style.display=msg.role==='user'?'block':'none';
-  document.getElementById('msg-action-modal').style.display='flex';
+
+function runGlobalSearch(){
+  clearTimeout(_globalSearchTimer);
+  _globalSearchTimer=setTimeout(runGlobalSearchNow,180);
 }
+
 function updateMsgTabBadge(){
   const total=Object.values(S.chats).reduce((s,c)=>s+(c.unread||0),0);
   const badge=document.getElementById('msg-tab-badge');
@@ -2553,12 +2580,14 @@ async function sendMsg(){
   const um={id:genId('msg'),role:'user',content:text,timestamp:Date.now(),read:false};
   if(draft){um.quoteText=draft.text;um.quoteAuthor=draft.author;}
   const sendCharId=S.currentChatId;
+  const streamCtx={chatId:sendCharId,reqId:genId('stream')};
+  _activeStreamCtx=streamCtx;
   chat.messages.push(um);renderMsgs();S.streaming=true;showTyping(true);
   clearQuoteDraft();
   try{
-    const res=await callChatAPI(sendCharId,chat,null,'reply',(c,t)=>updateStreamingBubble(c,t));
+    const res=await callChatAPI(sendCharId,chat,null,'reply',(c,t)=>updateStreamingBubble(streamCtx,c,t));
     um.read=true;
-    await appendAssistantResponse(sendCharId,chat,res,{source:'reply'});
+    await appendAssistantResponse(sendCharId,chat,res,{source:'reply',streamReqId:streamCtx.reqId});
     if(chat.autoSum) await checkAutoSum(chat);
   }catch(err){
     chat.messages.pop();
@@ -2566,11 +2595,13 @@ async function sendMsg(){
     else{toast('❌ '+err.message);}
     renderMsgs();
     showTyping(false);S.streaming=false;S.abortCtrl=null;
+    clearActiveStreamCtx(streamCtx.reqId);
     return;
   }
   if(!save())toast('⚠️ 本条回复已显示，但未能写入本地（存储空间不足）。请勿刷新页面，先导出备份或按提示清理后再发消息。');
   renderMsgs();renderChatList();
   showTyping(false);S.streaming=false;
+  clearActiveStreamCtx(streamCtx.reqId);
 }
 
 function getTimelinePrompt(chat,nowTs,purpose,charId){
@@ -2750,15 +2781,35 @@ function splitAssistantMessages(content,chat,opts={}){
   }
   return [sanitizeAssistantChunkText(raw)];
 }
+function chatAppendStreamCommitted(charId,text,thinking){
+  const chat=S.chats[charId];
+  if(!chat||!text)return;
+  chat.messages.push({
+    id:genId('msg'),
+    role:'assistant',
+    content:text,
+    thinking:thinking||null,
+    timestamp:Date.now(),
+    read:true,
+    auto:false
+  });
+  const chatOpen=document.getElementById('chat-view')?.classList.contains('open');
+  if(S.currentChatId===charId&&chatOpen)renderMsgs();
+  else{chat.unread=(chat.unread||0)+1;updateMsgTabBadge();}
+  renderChatList();
+}
+
 async function appendAssistantResponse(charId,chat,res,opts={}){
-  const parts=splitAssistantMessages(res.content,chat,opts);
+  let parts=splitAssistantMessages(res.content,chat,opts);
+  const committed=(opts.streamReqId&&_streamBubbleState&&_streamBubbleState.reqId===opts.streamReqId)?(_streamBubbleState.committed||0):0;
+  if(committed>0)parts=parts.slice(committed);
   for(let i=0;i<parts.length;i++){
     if(i>0){showTyping(true);await new Promise(r=>setTimeout(r,650+Math.random()*550));}
     chat.messages.push({
       id:genId('msg'),
       role:'assistant',
       content:sanitizeAssistantChunkText(parts[i]),
-      thinking:i===0?(res.thinking||null):null,
+      thinking:(i===0&&committed===0)?(res.thinking||null):null,
       timestamp:Date.now()+i,
       read:true,
       auto:opts.source==='auto'
@@ -2997,7 +3048,8 @@ function openCharEditor(charId){
     chip.className='chip pers on custom';
     chip.textContent=t;
     chip.onclick=function(){this.classList.toggle('on');};
-    document.querySelector('#chared-modal .chips').appendChild(chip);
+    const wrap=document.getElementById('ce-pers-chips');
+    if(wrap)wrap.appendChild(chip);
   });
   document.querySelectorAll('.chip.nick').forEach(c=>c.classList.toggle('on',c.textContent===char?.nickname));
   document.getElementById('ce-timezone').value=char?.timezone||'follow';
@@ -3023,7 +3075,8 @@ function addCustomPersTag(){
   chip.className='chip pers on custom';
   chip.textContent=val;
   chip.onclick=function(){this.classList.toggle('on');};
-  document.querySelector('#chared-modal .chips').appendChild(chip);
+  const wrap=document.getElementById('ce-pers-chips');
+  if(wrap)wrap.appendChild(chip);
   input.value='';
 }
 function saveChar(){
@@ -3210,6 +3263,15 @@ function normalizeBubbleCSSForApp(css){
   rep.forEach(([from,to])=>{out=out.replace(from,to);});
   if(!/[{}]/.test(out)&&/:/.test(out)) out=`.mrow.user .bubble{${out}}`;
   return out;
+}
+function filterBubbleCSSForApp(css){
+  const norm=normalizeBubbleCSSForApp(css);
+  if(!norm)return'';
+  const allow=/\.mrow|\.bubble|#cv-msgs|\.btime|\.rst|\.recall-note|\.quote-chip|\.quote-draft|#typ-ind|\.typ-bub|\.dot|\.stream-cursor/;
+  return norm.replace(/([^{}]+)\{([^{}]*)\}/g,(m,sel,body)=>{
+    const ok=sel.split(',').every(s=>allow.test(s.trim()));
+    return ok?`${sel}{${body}}`:'';
+  }).trim();
 }
 function fillBubblePresetCSSTemplate(){document.getElementById('bsp-css').value=getBubbleCSSTemplate();toast('🧩 已填入当前网页适配模板');}
 function downloadBubbleCSSTemplate(){dlFile('bubble-template.css',getBubbleCSSTemplate());toast('⬇️ 模板已下载');}
@@ -3724,11 +3786,13 @@ function resolveShortTaskModel(){
   pref.push(...known);
   return uniqModelList(pref)[0]||selected||known[0];
 }
-async function callAPIRaw(prompt){
+async function callAPIRaw(prompt,opts={}){
   const{apiKey,apiBase}=S.settings;
   // 短文本生成任务（留言/评论/动态）尽量选对话模型，避免冗长推理混入正文
   const shortModel=resolveShortTaskModel();
-  const resp=await fetch(`${apiBase}/chat/completions`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:shortModel,messages:[{role:'system',content:'你是角色扮演助手。严格只输出角色说的内容正文，不输出任何分析、推理过程、引号包裹、前缀标注或说明文字。如果内容被引号包裹，去掉引号直接输出。'},{role:'user',content:prompt}],max_tokens:600,stream:false,temperature:0.92})});
+  const maxTokens=parseInt(opts.maxTokens)||600;
+  const temperature=typeof opts.temperature==='number'?opts.temperature:0.92;
+  const resp=await fetch(`${apiBase}/chat/completions`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:shortModel,messages:[{role:'system',content:'你是角色扮演助手。严格只输出角色说的内容正文，不输出任何分析、推理过程、引号包裹、前缀标注或说明文字。如果内容被引号包裹，去掉引号直接输出。'},{role:'user',content:prompt}],max_tokens:maxTokens,stream:false,temperature})});
   if(!resp.ok){
     const er=await resp.json().catch(()=>({}));
     throw new Error(er.error?.message||`HTTP ${resp.status}`);
@@ -3736,7 +3800,7 @@ async function callAPIRaw(prompt){
   const data=await resp.json();
   const t=String(extractAPIChoiceText(data.choices?.[0])||'').trim();
   if(!t)throw new Error('模型未返回正文，请检查API Key是否正确');
-  return t.replace(/^["「『【]|["」』】]$/g,'').trim();
+  return t.replace(/^(["「『【])+|(["」』】])+$/g,'').trim();
 }
 function buildGuestbookContext(charId){
   const char=S.chars[charId]||{};
@@ -3907,14 +3971,15 @@ ${context}
 2. 留言要具体自然，像接着你们的关系说话，避免空泛模板句。
 3. 如果上下文里有最近发生的事、情绪、承诺、称呼习惯，优先轻微带入。
 4. 不要编造特别重大的新事件；可以基于已有上下文自然延伸。
-5. 20 到 45 字，只输出留言正文，不要引号、前缀、解释。
+5. 20 到 90 字，只输出留言正文，不要引号、前缀、解释。
 
 现在写留言：`;
   toast('💌 '+char.name+' 正在留言…');
   try{
-    const res=await callAPIRaw(prompt);
-    if(!String(res).trim()){toast('生成内容为空');return;}
-    S.guestbook.push({id:'gb'+Date.now(),charId,text:res,ts:Date.now(),reply:'',charReply:''});
+    const res=await callAPIRaw(prompt,{maxTokens:900,temperature:0.9});
+    const clean=sanitizeAssistantChunkText(res).replace(/\s+/g,' ').trim();
+    if(!clean){toast('生成内容为空');return;}
+    S.guestbook.push({id:'gb'+Date.now(),charId,text:clean,ts:Date.now(),reply:'',charReply:''});
     _gbPage=1;save();renderGuestbook();toast('💌 '+char.name+' 留言了！');
   }catch(e){toast('❌ '+e.message);}
 }
@@ -3947,8 +4012,8 @@ async function guestbookCharFollowUpReply(g){
   const char=S.chars[g.charId];if(!char||!S.settings.apiKey||!g.reply)return;
   try{
     const prompt=`你是${char.name}，性格：${char.personalities?.join('、')||'温柔'}。你在用户留言板留言：「${g.text}」。用户回复你：「${g.reply}」。请用人设写一条简短回应（45字内），只输出正文：`;
-    const res=await callAPIRaw(prompt);
-    g.charReply=res;save();renderGuestbook();toast('💌 '+char.name+' 回复了你');
+    const res=await callAPIRaw(prompt,{maxTokens:600,temperature:0.92});
+    g.charReply=sanitizeAssistantChunkText(res).replace(/\s+/g,' ').trim();save();renderGuestbook();toast('💌 '+char.name+' 回复了你');
   }catch(e){toast('❌ '+e.message);}
 }
 
