@@ -38,7 +38,7 @@ body{font-family:var(--font);background:var(--bg);height:100dvh;display:flex;fle
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   border-top:1px solid var(--pkb);
   display:flex;align-items:stretch;flex-shrink:0;
-  position:relative;z-index:100;
+  position:relative;z-index:1001;
 }
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s}
 .tab .ticon{font-size:22px;transition:transform .2s}
@@ -1347,6 +1347,7 @@ let S = {
   guestbook:[],   // [{id,charId,text,ts,reply}]
   messageFavorites:[], // [{id,chatId,messageId,role,content,timestamp,charName}]
   myProfile:{name:'我',emoji:'😊',avatarImg:null,sig:''},
+  drafts:{},
   streaming:false,
   _profileCharId:null,
   _commentMomentId:null,
@@ -1374,6 +1375,86 @@ let _modelFetchTimer = null;
 let _modelFetchLock = false;
 let _lastModelFetchSignature = '';
 let _modelTestLock = false;
+let _contactSearchTimer = null;
+let _globalSearchTimer = null;
+let _idbWriteTimer = null;
+let _idbWriteInFlight = false;
+let _idbDirty = false;
+let _idbPendingPayload = '';
+let _idbLastSavedPayload = '';
+
+const AICHAT_DB_NAME = 'aichat-db';
+const AICHAT_DB_VERSION = 2;
+const AICHAT_STORE = 'kv';
+const AICHAT_STATE_KEY = 'state-v1';
+
+function idbOpen(){
+  return new Promise((resolve,reject)=>{
+    if(!window.indexedDB){reject(new Error('当前浏览器不支持 IndexedDB'));return;}
+    const req=indexedDB.open(AICHAT_DB_NAME,AICHAT_DB_VERSION);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(AICHAT_STORE))db.createObjectStore(AICHAT_STORE);
+    };
+    req.onsuccess=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(AICHAT_STORE)){
+        db.close();
+        const req2=indexedDB.open(AICHAT_DB_NAME,db.version+1);
+        req2.onupgradeneeded=()=>{
+          const db2=req2.result;
+          if(!db2.objectStoreNames.contains(AICHAT_STORE))db2.createObjectStore(AICHAT_STORE);
+        };
+        req2.onsuccess=()=>resolve(req2.result);
+        req2.onerror=()=>reject(req2.error||new Error('IndexedDB 打开失败'));
+        return;
+      }
+      resolve(db);
+    };
+    req.onerror=()=>reject(req.error||new Error('IndexedDB 打开失败'));
+  });
+}
+async function idbGet(key){
+  const db=await idbOpen();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(AICHAT_STORE,'readonly');
+    const store=tx.objectStore(AICHAT_STORE);
+    const req=store.get(key);
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error||new Error('IndexedDB 读取失败'));
+    tx.oncomplete=()=>db.close();
+    tx.onabort=tx.onerror=()=>{db.close();};
+  });
+}
+async function idbSet(key,value){
+  const db=await idbOpen();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(AICHAT_STORE,'readwrite');
+    const store=tx.objectStore(AICHAT_STORE);
+    const req=store.put(value,key);
+    req.onerror=()=>reject(req.error||new Error('IndexedDB 写入失败'));
+    tx.oncomplete=()=>{db.close();resolve(true);};
+    tx.onabort=tx.onerror=()=>{const err=tx.error||new Error('IndexedDB 写入失败');db.close();reject(err);};
+  });
+}
+async function idbGetWithRetry(key,retry=4,delay=120){
+  let lastErr=null;
+  for(let i=0;i<=retry;i++){
+    try{
+      const v=await idbGet(key);
+      if(v!==undefined)return v;
+    }catch(e){lastErr=e;}
+    if(i<retry)await new Promise(r=>setTimeout(r,delay));
+  }
+  if(lastErr)throw lastErr;
+  return undefined;
+}
+async function idbEstimateUsageBytes(){
+  const data=await idbGetWithRetry(AICHAT_STATE_KEY,3,80);
+  const raw=typeof data==='string'?data:JSON.stringify(data||'');
+  return new Blob([raw||'']).size;
+}
+
 const DEFAULT_MODEL_OPTIONS = ['deepseek-reasoner','deepseek-chat','gpt-4.1-mini','gpt-4o-mini'];
 
 function genId(prefix){
@@ -1562,7 +1643,8 @@ function migrateBubbleDataIfNeeded(){
 // ============================================================
 async function init(){
   await initSupabaseClient();
-  load();
+  await load();
+  if(!S.drafts||typeof S.drafts!=='object')S.drafts={};
   migrateBubbleDataIfNeeded();
   normalizeAllData();
   if(!Object.keys(S.chars).length) createDefaultChar();
@@ -1590,11 +1672,74 @@ async function init(){
   startAutoMessageLoop();
 }
 
-function load(){
-  try{const r=localStorage.getItem('aichat-v4');if(r){const p=JSON.parse(r);S.chats=p.chats||{};S.chars=p.chars||{};S.settings={...S.settings,...(p.settings||{})};S.memory=p.memory||'';S.together={...S.together,...(p.together||{})};S.moments=p.moments||[];S.guestbook=p.guestbook||[];S.messageFavorites=p.messageFavorites||[];S.myProfile={...S.myProfile,...(p.myProfile||{})};}}catch(e){}
+async function load(){
+  let loaded=false;
+  try{
+    const r=await idbGetWithRetry(AICHAT_STATE_KEY,6,150);
+    if(r){
+      const p=typeof r==='string'?JSON.parse(r):r;
+      S.chats=p.chats||{};
+      S.chars=p.chars||{};
+      S.settings={...S.settings,...(p.settings||{})};
+      S.memory=p.memory||'';
+      S.together={...S.together,...(p.together||{})};
+      S.moments=p.moments||[];
+      S.guestbook=p.guestbook||[];
+      S.messageFavorites=p.messageFavorites||[];
+      S.myProfile={...S.myProfile,...(p.myProfile||{})};
+      S.drafts=p.drafts||{};
+      loaded=true;
+    }
+  }catch(e){
+    console.error(e);
+  }
+
+  if(loaded)return;
+
+  try{
+    const legacy=localStorage.getItem('aichat-v4');
+    if(!legacy)return;
+    const p=JSON.parse(legacy);
+    S.chats=p.chats||{};
+    S.chars=p.chars||{};
+    S.settings={...S.settings,...(p.settings||{})};
+    S.memory=p.memory||'';
+    S.together={...S.together,...(p.together||{})};
+    S.moments=p.moments||[];
+    S.guestbook=p.guestbook||[];
+    S.messageFavorites=p.messageFavorites||[];
+    S.myProfile={...S.myProfile,...(p.myProfile||{})};
+    S.drafts=p.drafts||{};
+    await idbSet(AICHAT_STATE_KEY,_payload());
+    localStorage.removeItem('aichat-v4');
+  }catch(e){
+    console.error(e);
+  }
 }
-function _payload(){return JSON.stringify({chats:S.chats,chars:S.chars,settings:S.settings,memory:S.memory,together:S.together,moments:S.moments,guestbook:S.guestbook,messageFavorites:S.messageFavorites,myProfile:S.myProfile});}
-function saveTryRaw(){localStorage.setItem('aichat-v4',_payload());return true;}
+function _payload(){return JSON.stringify({chats:S.chats,chars:S.chars,settings:S.settings,memory:S.memory,together:S.together,moments:S.moments,guestbook:S.guestbook,messageFavorites:S.messageFavorites,myProfile:S.myProfile,drafts:S.drafts});}
+function saveTryRaw(){
+  const payload=_payload();
+  _idbPendingPayload=payload;
+  _idbDirty=true;
+  clearTimeout(_idbWriteTimer);
+  _idbWriteTimer=setTimeout(()=>{void flushIdbWriteQueue();},260);
+  return true;
+}
+async function flushIdbWriteQueue(){
+  if(_idbWriteInFlight)return;
+  if(!_idbDirty)return;
+  _idbWriteInFlight=true;
+  try{
+    while(_idbDirty){
+      _idbDirty=false;
+      const payload=_idbPendingPayload;
+      await idbSet(AICHAT_STATE_KEY,payload);
+      _idbLastSavedPayload=payload;
+    }
+  }finally{
+    _idbWriteInFlight=false;
+  }
+}
 function saveAfterQuotaRecovery(){
   for(const id of Object.keys(S.chats)){if(S.chats[id]?.chatBg){S.chats[id].chatBg=null;}}
   if(S.settings)S.settings.customWP=null;
@@ -1615,8 +1760,7 @@ function save(){
     const ok=saveTryRaw();
     if(ok){
       scheduleCloudSync();
-      const usage=getStorageUsage();
-      if(usage.percent>80&&!S._storageWarnShown){S._storageWarnShown=true;showStorageWarningModal(usage.percent);}
+      void getStorageUsage().then(usage=>{if(usage.percent>80&&!S._storageWarnShown){S._storageWarnShown=true;showStorageWarningModal(usage.percent);}});
     }
     return ok;
   }
@@ -1814,6 +1958,8 @@ function createDefaultChar(){
 // TAB NAVIGATION
 // ============================================================
 function switchTab(pageId,el){
+  saveCurrentDraft();
+  closeOverlayOnTabSwitch();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(pageId).classList.add('active');
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
@@ -1914,6 +2060,7 @@ function renderChatList(){
 // CHAT VIEW
 // ============================================================
 function openChat(charId){
+  saveCurrentDraft();
   S.currentChatId=charId;
   if(S.chats[charId]?.hidden) S.chats[charId].hidden=false;
   if(!S.chats[charId]){
@@ -1945,11 +2092,14 @@ function openChat(charId){
   if(S.chats[charId])S.chats[charId].unread=0;
   updateMsgTabBadge();
   renderMsgs();
+  loadDraftForCurrentChat();
+  showTyping(false);
   document.getElementById('chat-view').classList.add('open');
 }
 
 function closeChat(){
   if(document.getElementById('chat-settings-panel').classList.contains('open'))closeChatSettingsPanel();
+  saveCurrentDraft();
   document.getElementById('chat-view').classList.remove('open');
   clearQuoteDraft();
   clearMultiSelectState();
@@ -2263,7 +2413,7 @@ function openGlobalSearch(){
   document.getElementById('global-search-modal').style.display='flex';
   setTimeout(()=>document.getElementById('gs-search-inp').focus(),100);
 }
-function runGlobalSearch(){
+function runGlobalSearchNow(){
   const q=(document.getElementById('gs-search-inp').value||'').trim().toLowerCase();
   const res=document.getElementById('global-search-results');
   if(!q){res.innerHTML='<div style="padding:14px;color:var(--gl);text-align:center;font-size:13px">输入关键词开始搜索</div>';return;}
@@ -2285,6 +2435,10 @@ function runGlobalSearch(){
     const ts=fmtShort(new Date(h.msg.timestamp||0));
     return `<div class="gs-res-item" onclick="closeMod('global-search-modal');openChat('${h.charId}')"><div class="gs-res-char">${esc(name)}</div><div class="gs-res-preview">${esc(preview)}</div><div class="gs-res-time">${ts}</div></div>`;
   }).join('');
+}
+function runGlobalSearch(){
+  clearTimeout(_globalSearchTimer);
+  _globalSearchTimer=setTimeout(runGlobalSearchNow,180);
 }
 function updateStreamingBubble(content,thinking){
   let el=document.getElementById('streaming-bubble');
@@ -2389,6 +2543,7 @@ async function sendMsg(){
   const text=inp.value.trim();if(!text)return;
   if(!S.settings.apiKey){toast('请先在设置→API 填写 API Key');openGlobalSettings();return;}
   inp.value='';inp.style.height='auto';
+  S.drafts[S.currentChatId]='';
   document.getElementById('send-btn').disabled=true;
   const chat=S.chats[S.currentChatId];
   const draft=S._quoteDraft&&S._quoteDraft.chatId===S.currentChatId?S._quoteDraft:null;
@@ -2398,7 +2553,7 @@ async function sendMsg(){
   chat.messages.push(um);renderMsgs();S.streaming=true;showTyping(true);
   clearQuoteDraft();
   try{
-    const res=await callChatAPI(sendCharId,chat,null,'reply',()=>{});
+    const res=await callChatAPI(sendCharId,chat,null,'reply',(c,t)=>updateStreamingBubble(c,t));
     um.read=true;
     await appendAssistantResponse(sendCharId,chat,res,{source:'reply'});
     if(chat.autoSum) await checkAutoSum(chat);
@@ -2738,7 +2893,13 @@ function startChatFromProfile(){const id=S._profileCharId;closeCharProfile();ope
 // CONTACTS (page 2)
 // ============================================================
 let _groupFilter='all',_searchFilter='';
-function filterContacts(){_searchFilter=document.getElementById('contact-search-inp').value.toLowerCase();renderContactList();}
+function filterContacts(){
+  clearTimeout(_contactSearchTimer);
+  _contactSearchTimer=setTimeout(()=>{
+    _searchFilter=document.getElementById('contact-search-inp').value.toLowerCase();
+    renderContactList();
+  },180);
+}
 function filterGroup(mode,el){
   _groupFilter=mode;
   document.querySelectorAll('#group-tabs-wrap .gtab').forEach(t=>t.classList.remove('on'));
@@ -4041,12 +4202,16 @@ function showStorageWarningModal(percent){
   </div>`;
   document.body.appendChild(d);
 }
-function getStorageUsage(){
-  try{const data=localStorage.getItem('aichat-v4')||'';const usedBytes=new Blob([data]).size;const estimatedMax=5*1024*1024;return{usedBytes,estimatedMax,percent:Math.round(usedBytes/estimatedMax*100)};}
-  catch(e){return{usedBytes:0,estimatedMax:5242880,percent:0};}
+async function getStorageUsage(){
+  try{
+    const usedBytes=await idbEstimateUsageBytes();
+    const estimatedMax=50*1024*1024;
+    return{usedBytes,estimatedMax,percent:Math.round(usedBytes/estimatedMax*100)};
+  }
+  catch(e){return{usedBytes:0,estimatedMax:50*1024*1024,percent:0};}
 }
-function updateStorageBar(){
-  const{usedBytes,percent}=getStorageUsage();
+async function updateStorageBar(){
+  const{usedBytes,percent}=await getStorageUsage();
   const bar=document.getElementById('storage-bar');
   const text=document.getElementById('storage-text');
   const warn=document.getElementById('storage-warn');
@@ -4054,7 +4219,7 @@ function updateStorageBar(){
   const mb=(usedBytes/1024/1024).toFixed(1);
   bar.style.width=Math.min(percent,100)+'%';
   bar.style.background=percent>85?'var(--red)':percent>60?'#ffa500':'var(--grn)';
-  text.textContent=`${mb} MB / ~5 MB (${percent}%)`;
+  text.textContent=`${mb} MB / ~50 MB (${percent}%)`;
   if(percent>80){warn.style.display='block';warn.textContent='⚠️ 存储空间即将满！建议导出备份，或清理朋友圈照片/聊天背景图。';}
   else{warn.style.display='none';}
 }
@@ -4135,6 +4300,26 @@ function saveTog(){S.together.startDate=document.getElementById('tog-date').valu
 function closeMod(id){
   document.getElementById(id).style.display='none';
   if(id==='msg-action-modal')S._messageAction=null;
+}
+function closeOverlayOnTabSwitch(){
+  ['compose-modal','global-search-modal','comment-modal','guestbook-page'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&el.style.display==='flex')el.style.display='none';
+  });
+}
+function saveCurrentDraft(){
+  if(!S.currentChatId)return;
+  const inp=document.getElementById('user-input');
+  if(!inp)return;
+  S.drafts[S.currentChatId]=inp.value||'';
+}
+function loadDraftForCurrentChat(){
+  const inp=document.getElementById('user-input');
+  if(!inp)return;
+  const draft=S.currentChatId?(S.drafts[S.currentChatId]||''):'';
+  inp.value=draft;
+  autoResize(inp);
+  document.getElementById('send-btn').disabled=draft.trim()==='';
 }
 function swTab(prefix,tab){
   const panel=document.getElementById(`${prefix}-tab-${tab}`);if(!panel)return;
