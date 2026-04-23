@@ -2815,10 +2815,15 @@ async function appendAssistantResponse(charId,chat,res,opts={}){
       auto:opts.source==='auto'
     });
     const chatOpen=document.getElementById('chat-view')?.classList.contains('open');
-    if(S.currentChatId===charId&&chatOpen)renderMsgs();
+    if(S.currentChatId===charId&&chatOpen){
+      renderMsgs();
+      showTyping(i<parts.length-1);
+    }
     else{chat.unread=(chat.unread||0)+1;updateMsgTabBadge();}
-    renderChatList();
-    save();
+    if(i===parts.length-1){
+      renderChatList();
+      save();
+    }
   }
 }
 async function maybeSendAutoMessage(charId){
