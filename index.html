@@ -2652,7 +2652,8 @@ function buildSystemPrompt(charId,chat,purpose){
   if(chat.chatMem) parts.push('【自动总结记忆】\n'+chat.chatMem);
   parts.push(getTimelinePrompt(chat,Date.now(),purpose,charId));
   if(S.together.startDate){const d=Math.floor((Date.now()-new Date(S.together.startDate))/86400000);parts.push(`【关系】已在一起 ${d} 天`);}
-  if(chat.allowMultiMsg)parts.push('【发消息方式】为了增强真实互动感，你在普通私聊回复时，优先连续发送 2 到 5 条较短消息；只有内容特别短、特别直接时才发 1 条。多条消息应像真人连续发消息，长度有短有长，不要每条都一样长。如果要分成多条，必须只用 <NEXT_MSG> 作为消息分隔符，不要编号，不要解释，不要说“第1条/第2条”。');
+  if(chat.allowMultiMsg)parts.push('【发消息方式】为了增强真实互动感，你在普通私聊回复时，优先连续发送 2 到 5 条较短消息；只有内容特别短、特别直接时才发 1 条。多条消息应像真人连续发消息，长度有短有长，不要每条都一样长。如果要分成多条，必须只用 <NEXT_MSG> 作为消息分隔符，不要编号，不要解释，不要说”第1条/第2条”。');
+  parts.push('【思考链规则】在思考链（thinking/reasoning）中，必须使用中文，以第一人称视角表达你此刻的真实感受和心理活动。每次思考时都要问自己：我现在感受到了什么？我的情绪是什么？着重表达内心的情绪波动和心理活动，模拟真实的意识流转。禁止使用”用户”、”他们”等第三人称称呼，要直接用对方的名字或昵称。保持叙事流畅自然，避免使用格式化的数字序号（如”1. 2. 3.”）。思考链应该像内心独白，而不是分析报告。');
   return parts.join('\n\n')||'你是温柔体贴的AI伴侣，请用中文回复。';
 }
 async function callChatAPI(charId,chat,customPrompt,purpose='reply',onChunk){
