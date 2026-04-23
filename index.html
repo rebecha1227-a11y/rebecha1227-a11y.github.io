@@ -7,16 +7,16 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Jinger's Palace</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&family=Noto+Sans+SC:wght@400;500;600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --pk:#FF6B9D;--pkl:#FF9AC3;--pkp:#FFF0F5;--pkb:#FECDDA;--pkd:#E8457A;
-  --rose:#FFE4EE;--lav:#F3EEFF;
-  --bfrom:#FF6B9D;--bto:#FF9AC3;--bai:#FFF;
-  --bg:#F7F2F5;--white:#FFF;--black:#2D1B25;--gray:#8B7580;--gl:#C8B8BE;
-  --red:#FF4466;--grn:#34C77B;--ts:#C4A0B0;
-  --thbg:#F5F0FF;--thbd:#D4C2FF;--thc:#7C5ABF;
-  --rb:20px;--font:'Nunito',-apple-system,BlinkMacSystemFont,sans-serif;
+  --pk:#5B7B6A;--pkl:#7A9B8A;--pkp:#F5F3EF;--pkb:#D4CFC7;--pkd:#4A6B5A;
+  --rose:#EDE9E3;--lav:#F0EDE7;
+  --bfrom:#5B7B6A;--bto:#5B7B6A;--bai:#FAFAF7;
+  --bg:#F5F3EF;--white:#FAFAF7;--black:#2C2C2C;--gray:#8A8A8A;--gl:#C8C4BC;
+  --red:#C75450;--grn:#5B7B6A;--ts:#B0ADA6;
+  --thbg:#F0EDE7;--thbd:#C8C4BC;--thc:#5B7B6A;
+  --rb:14px;--font:'Space Grotesk','IBM Plex Sans','Noto Sans SC',sans-serif;
   --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
   --sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);
   --tab-h:60px;
@@ -42,15 +42,17 @@ body{font-family:var(--font);background:var(--bg);height:100dvh;display:flex;fle
 }
 body.chat-open #tabbar{display:none}
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s}
-.tab .ticon{font-size:22px;transition:transform .2s}
-.tab .tlbl{font-size:10px;font-weight:700;color:var(--gl);transition:color .2s}
+.tab .ticon{font-size:22px;transition:transform .2s;display:flex;align-items:center;justify-content:center}
+.tab .ticon svg{width:24px;height:24px;stroke:var(--gl);stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
+.tab .tlbl{font-size:10px;font-weight:500;color:var(--gl);transition:color .2s}
 .tab.on .tlbl{color:var(--pk)}
-.tab.on .ticon{transform:scale(1.1)}
+.tab.on .ticon svg{stroke:var(--pk)}
+.tab.on .ticon{transform:scale(1.05)}
 
 /* ===== COMMON PAGE HEADER ===== */
 .pg-hdr{
   padding:calc(12px + var(--st)) 16px 12px;
-  background:rgba(255,245,248,0.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  background:rgba(245,243,239,0.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   border-bottom:1.5px solid var(--pkb);
   display:flex;align-items:center;gap:10px;flex-shrink:0;position:relative;z-index:10;
 }
@@ -62,10 +64,52 @@ body.chat-open #tabbar{display:none}
 .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
 
 /* ===== PAGE 1: MESSAGES ===== */
+/* profile card — Instagram style */
+.msg-profile-wrap{background:var(--white);padding:0 0 12px}
+.msg-profile-card{display:flex;flex-direction:column;align-items:center;padding:20px 20px 16px;gap:0;background:var(--white);position:relative}
+/* stats row sits above avatar, full width */
+.profile-stats{display:flex;width:100%;margin-bottom:16px}
+.profile-stat{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.profile-stat:active{opacity:.7}
+.profile-stat-n{font-size:17px;font-weight:700;color:var(--black);line-height:1;display:flex;align-items:center;justify-content:center;min-height:22px}
+.profile-stat-l{font-size:11px;color:var(--gray);letter-spacing:.1px}
+/* avatar */
+.msg-av-wrap{position:relative;margin-bottom:10px}
+.msg-profile-av{width:80px;height:80px;border-radius:50%;background:var(--pkb);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:32px;cursor:pointer;border:2.5px solid var(--pkb);box-shadow:0 2px 10px rgba(91,123,106,.15)}
+.msg-profile-av img{width:100%;height:100%;object-fit:cover}
+.msg-av-plus{position:absolute;bottom:0;right:0;width:22px;height:22px;border-radius:50%;background:var(--pk);border:2px solid var(--white);color:#fff;font-size:14px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+/* name + sig */
+.msg-profile-name{font-size:14px;font-weight:600;color:var(--black);margin-bottom:3px}
+.msg-profile-sig{font-size:12px;color:var(--gray);line-height:1.5;text-align:center;max-width:240px;margin-bottom:14px;min-height:16px;cursor:pointer}
+/* edit profile button */
+.msg-edit-profile-btn{width:100%;padding:8px 0;border-radius:10px;border:1.5px solid var(--pkb);background:var(--white);font-size:13px;font-weight:600;color:var(--black);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s;font-family:var(--font)}
+.msg-edit-profile-btn:active{background:var(--pkp)}
+/* msg calendar */
+.msg-calendar{padding:10px 14px 8px;background:var(--bg)}
+.msg-cal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.msg-cal-title{font-size:12px;font-weight:500;color:var(--gray)}
+.msg-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.msg-cal-dow{font-size:10px;color:var(--gray);padding:2px 0;font-weight:500}
+.msg-cal-day{font-size:12px;color:var(--black);padding:4px 2px;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;margin:0 auto}
+.msg-cal-day.today{background:var(--pk);color:#fff;font-weight:600}
+/* msg tabs + search */
+.msg-tabs{display:flex;margin:10px 14px 0;gap:4px;background:transparent;border-radius:0;border:none;overflow:visible}
+.msg-tab{flex:1;padding:8px 0;text-align:center;font-size:13px;font-weight:500;color:var(--gray);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;border-radius:10px;background:var(--white);border:1px solid rgba(91,123,106,.08);box-shadow:0 1px 4px rgba(91,123,106,.06)}
+.msg-tab.on{color:var(--pk);background:var(--pkp);border-color:rgba(91,123,106,.18);font-weight:600}
+.msg-search-wrap{padding:8px 14px 4px;background:var(--bg)}
+.msg-search-bar{background:var(--white);border-radius:12px;border:1px solid rgba(91,123,106,.10);display:flex;align-items:center;padding:8px 12px;gap:8px;box-shadow:0 1px 4px rgba(91,123,106,.06)}
+.msg-search-bar svg{width:14px;height:14px;stroke:var(--gray);stroke-width:2;fill:none;flex-shrink:0}
+.msg-search-bar input{flex:1;border:none;background:none;font-size:14px;font-family:var(--font);color:var(--black);outline:none}
+.msg-search-bar input::placeholder{color:var(--gl)}
+/* notebook */
+.nb-entry{background:var(--white);border-radius:14px;border:1px solid var(--pkb);padding:14px 16px;margin-bottom:10px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.nb-entry:active{background:var(--pkp)}
+.nb-entry-date{font-size:11px;color:var(--gray);margin-bottom:6px}
+.nb-entry-body{font-size:14px;color:var(--black);line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 #pg-msg .chat-list-wrap{padding:8px 12px}
-.ci{display:flex;align-items:center;gap:11px;padding:11px 14px;background:var(--white);border-radius:16px;margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;box-shadow:0 1px 6px rgba(255,107,157,.07)}
+.ci{display:flex;align-items:center;gap:11px;padding:11px 14px;background:var(--white);border-radius:16px;margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;box-shadow:0 1px 6px rgba(91,123,106,.07)}
 .ci:active{transform:scale(.98);background:var(--rose)}
-.ci-av{width:48px;height:48px;border-radius:50%;flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,var(--pk),#FFB3CC);display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid var(--pkb);position:relative}
+.ci-av{width:48px;height:48px;border-radius:50%;flex-shrink:0;overflow:hidden;background:var(--pk);display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid var(--pkb);position:relative}
 .ci-av img{width:100%;height:100%;object-fit:cover}
 .online-dot{position:absolute;bottom:1px;right:1px;width:10px;height:10px;background:var(--grn);border-radius:50%;border:2px solid var(--white)}
 .ci-info{flex:1;min-width:0}
@@ -80,7 +124,7 @@ body.chat-open #tabbar{display:none}
 #chat-view.open{display:flex}
 #cv-hdr{padding:calc(10px + var(--st)) 12px 10px;background:rgba(255,245,248,0.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1.5px solid var(--pkb);display:flex;align-items:center;gap:10px;flex-shrink:0;position:relative;z-index:2}
 #cv-back{font-size:22px;color:var(--pk);background:none;border:none;cursor:pointer;padding:4px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
-#cv-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--pk),#FFB3CC);display:flex;align-items:center;justify-content:center;font-size:17px;overflow:hidden;border:2px solid var(--pkb);flex-shrink:0;cursor:pointer}
+#cv-av{width:36px;height:36px;border-radius:50%;background:var(--pk);display:flex;align-items:center;justify-content:center;font-size:17px;overflow:hidden;border:2px solid var(--pkb);flex-shrink:0;cursor:pointer}
 #cv-av img{width:100%;height:100%;object-fit:cover}
 #cv-info{flex:1;cursor:pointer}
 #cv-name{font-size:15px;font-weight:800;color:var(--black)}
@@ -88,8 +132,8 @@ body.chat-open #tabbar{display:none}
 #cv-more{font-size:20px;color:var(--pk);background:none;border:none;cursor:pointer;padding:4px 6px;-webkit-tap-highlight-color:transparent}
 
 /* TOGETHER BANNER */
-#tog-bar{padding:5px 16px;background:linear-gradient(90deg,rgba(255,107,157,.08),rgba(255,180,210,.14),rgba(255,107,157,.08));border-bottom:1px solid var(--pkb);text-align:center;font-size:12px;font-weight:700;color:var(--pk);display:none;flex-shrink:0}
-#tog-bar.show{display:block}
+#tog-bar{padding:5px 16px;background:linear-gradient(90deg,rgba(91,123,106,.08),rgba(255,180,210,.14),rgba(91,123,106,.08));border-bottom:1px solid var(--pkb);text-align:center;font-size:12px;font-weight:700;color:var(--pk);display:none;flex-shrink:0}
+
 .hb{animation:hb 1.4s infinite;display:inline-block}
 @keyframes hb{0%,100%{transform:scale(1)}15%{transform:scale(1.28)}30%{transform:scale(1)}45%{transform:scale(1.15)}}
 
@@ -101,7 +145,7 @@ body.chat-open #tabbar{display:none}
 .mrow.user{flex-direction:row-reverse}
 .mrow+.mrow.ss{margin-top:2px}
 .mrow+.mrow:not(.ss){margin-top:8px}
-.mav{width:30px;height:30px;border-radius:50%;flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,var(--pk),#FFB3CC);display:flex;align-items:center;justify-content:center;font-size:15px;border:1.5px solid var(--pkb)}
+.mav{width:30px;height:30px;border-radius:50%;flex-shrink:0;overflow:hidden;background:var(--pk);display:flex;align-items:center;justify-content:center;font-size:15px;border:1.5px solid var(--pkb)}
 .mav img{width:100%;height:100%;object-fit:cover}
 .bwrap{display:flex;flex-direction:column;max-width:72%}
 .mrow.user .bwrap{align-items:flex-end;animation:bR .26s cubic-bezier(.34,1.56,.64,1)}
@@ -119,10 +163,10 @@ body.chat-open #tabbar{display:none}
 .quote-draft-title{font-size:12px;font-weight:800;color:var(--pk);margin-bottom:3px}
 .quote-draft-text{font-size:13px;color:var(--gray);line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .quote-draft-close{background:none;border:none;color:var(--pk);font-size:18px;cursor:pointer;padding:0 4px;line-height:1}
-.mrow.user .bubble{background:linear-gradient(135deg,var(--bfrom),var(--bto));color:#fff;border-bottom-right-radius:4px;box-shadow:0 3px 10px rgba(255,107,157,.25)}
+.mrow.user .bubble{background:var(--bfrom);color:#fff;border-bottom-right-radius:4px;box-shadow:0 3px 10px rgba(91,123,106,.25)}
 .mrow.user .bubble::after{content:'';position:absolute;bottom:0;right:-6px;width:12px;height:12px;background:var(--bto);clip-path:polygon(0 0,0 100%,100% 100%)}
 .mrow.user.nt .bubble{border-bottom-right-radius:18px}.mrow.user.nt .bubble::after{display:none}
-.mrow.assistant .bubble{background:var(--bai);color:var(--black);border-bottom-left-radius:4px;box-shadow:0 2px 8px rgba(255,107,157,.10);border:1px solid rgba(255,107,157,.07)}
+.mrow.assistant .bubble{background:var(--bai);color:var(--black);border-bottom-left-radius:4px;box-shadow:0 2px 8px rgba(91,123,106,.10);border:1px solid rgba(91,123,106,.07)}
 .mrow.assistant .bubble::after{content:'';position:absolute;bottom:0;left:-6px;width:12px;height:12px;background:var(--bai);clip-path:polygon(100% 0,0 100%,100% 100%)}
 .mrow.assistant.nt .bubble{border-bottom-left-radius:18px}.mrow.assistant.nt .bubble::after{display:none}
 
@@ -166,7 +210,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 .recall-row{justify-content:center}
 .recall-note{font-size:11px;color:#6f6870;font-weight:600;text-align:center;padding:2px 10px}
 .mrow.selecting{position:relative;cursor:pointer}
-.mrow.sel-on .bubble{outline:2px solid rgba(255,107,157,.35)}
+.mrow.sel-on .bubble{outline:2px solid rgba(91,123,106,.35)}
 .msg-check{position:absolute;top:-5px;width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid var(--pkb);box-shadow:0 2px 8px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:transparent}
 .mrow.assistant .msg-check{left:-2px}
 .mrow.user .msg-check{right:-2px}
@@ -183,7 +227,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 /* TYPING */
 #typ-ind{display:none;align-items:flex-end;gap:8px;margin-top:8px;animation:bL .22s cubic-bezier(.34,1.56,.64,1)}
 #typ-ind.show{display:flex}
-.typ-bub{background:var(--white);border-radius:18px;border-bottom-left-radius:4px;padding:12px 14px;display:flex;gap:5px;align-items:center;box-shadow:0 2px 8px rgba(255,107,157,.1);border:1px solid rgba(255,107,157,.07);position:relative}
+.typ-bub{background:var(--white);border-radius:18px;border-bottom-left-radius:4px;padding:12px 14px;display:flex;gap:5px;align-items:center;box-shadow:0 2px 8px rgba(91,123,106,.1);border:1px solid rgba(91,123,106,.07);position:relative}
 .typ-bub::after{content:'';position:absolute;bottom:0;left:-6px;width:12px;height:12px;background:var(--white);clip-path:polygon(100% 0,0 100%,100% 100%)}
 .typ-lbl{font-size:13px;color:var(--pk);font-weight:700;margin-left:4px}
 .dot{width:7px;height:7px;background:var(--pkl);border-radius:50%;animation:bd 1.2s infinite}
@@ -193,16 +237,16 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 /* INPUT */
 #cv-inp{padding:9px 12px;padding-bottom:calc(9px + var(--sb));background:rgba(255,245,248,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1.5px solid var(--pkb);display:flex;flex-direction:column;gap:8px;flex-shrink:0}
 #cv-inp-row{display:flex;align-items:flex-end;gap:8px}
-#inp-wrap{flex:1;background:var(--white);border-radius:22px;border:1.5px solid var(--pkb);display:flex;align-items:flex-end;padding:8px 12px;gap:6px;box-shadow:0 2px 8px rgba(255,107,157,.08);transition:border-color .2s}
+#inp-wrap{flex:1;background:var(--white);border-radius:22px;border:1.5px solid var(--pkb);display:flex;align-items:flex-end;padding:8px 12px;gap:6px;box-shadow:0 2px 8px rgba(91,123,106,.08);transition:border-color .2s}
 #inp-wrap:focus-within{border-color:var(--pk)}
 #user-input{flex:1;background:none;border:none;outline:none;font-size:16px;font-family:var(--font);color:var(--black);resize:none;max-height:110px;line-height:1.5;min-height:24px;-webkit-appearance:none}
 #user-input::placeholder{color:var(--gl);font-weight:600}
 .iab{background:none;border:none;cursor:pointer;font-size:20px;color:var(--pkl);padding:0;line-height:1;flex-shrink:0;-webkit-tap-highlight-color:transparent}
 .iab:active{transform:scale(1.16);color:var(--pk)}
-#send-btn{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--pk),var(--pkl));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;flex-shrink:0;box-shadow:0 3px 10px rgba(255,107,157,.35);transition:all .2s;-webkit-tap-highlight-color:transparent}
+#send-btn{width:38px;height:38px;border-radius:50%;background:var(--pk);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;flex-shrink:0;box-shadow:0 3px 10px rgba(91,123,106,.35);transition:all .2s;-webkit-tap-highlight-color:transparent}
 #send-btn:disabled{background:#E8D5DC;box-shadow:none}
 #send-btn:not(:disabled):active{transform:scale(.93)}
-.multi-bar{display:none;align-items:center;gap:8px;margin:0 12px 8px;padding:10px 12px;background:linear-gradient(135deg,#FFF0F5,#FFF7FA);border:1.5px solid var(--pkb);border-radius:14px}
+.multi-bar{display:none;align-items:center;gap:8px;margin:0 12px 8px;padding:10px 12px;background:var(--pkp);border:1.5px solid var(--pkb);border-radius:14px}
 .multi-bar.show{display:flex}
 .multi-bar-info{flex:1;min-width:0;font-size:13px;font-weight:700;color:var(--pkd)}
 .multi-bar button{padding:7px 12px;font-size:12px}
@@ -220,9 +264,9 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 .section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .section-lbl{font-size:12px;font-weight:800;color:var(--pk);text-transform:uppercase;letter-spacing:.5px}
 .section-count{font-size:12px;color:var(--gl);font-weight:600}
-.contact-item{display:flex;align-items:center;gap:11px;padding:10px 14px;background:var(--white);border-radius:14px;margin-bottom:6px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;box-shadow:0 1px 5px rgba(255,107,157,.06)}
+.contact-item{display:flex;align-items:center;gap:11px;padding:10px 14px;background:var(--white);border-radius:14px;margin-bottom:6px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;box-shadow:0 1px 5px rgba(91,123,106,.06)}
 .contact-item:active{transform:scale(.98);background:var(--rose)}
-.contact-av{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--pk),#FFB3CC);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;overflow:hidden;border:2px solid var(--pkb)}
+.contact-av{width:44px;height:44px;border-radius:50%;background:var(--pk);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;overflow:hidden;border:2px solid var(--pkb)}
 .contact-av img{width:100%;height:100%;object-fit:cover}
 .contact-name{font-size:15px;font-weight:700;color:var(--black)}
 .contact-sig{font-size:12px;color:var(--gray);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -230,13 +274,13 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 /* ===== CHARACTER PROFILE ===== */
 #char-profile{position:fixed;inset:0;z-index:3400;display:none;flex-direction:column;background:var(--white)}
 #char-profile.open{display:flex}
-.cp-cover{height:200px;position:relative;flex-shrink:0;background:linear-gradient(135deg,#FFE0EC,#E8D0FF);overflow:visible}
+.cp-cover{height:200px;position:relative;flex-shrink:0;background:#E8E4DE;overflow:visible}
 .cp-cover img{width:100%;height:100%;object-fit:cover}
 .cp-cover-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.2))}
 .cp-back{position:absolute;top:calc(12px + var(--st));left:14px;width:40px;height:40px;background:rgba(255,255,255,.8);backdrop-filter:blur(10px);border-radius:50%;border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation;z-index:2}
 .cp-edit{position:absolute;top:calc(12px + var(--st));right:14px;background:rgba(255,255,255,.8);backdrop-filter:blur(10px);border-radius:20px;border:none;cursor:pointer;font-size:13px;font-weight:700;padding:6px 14px;color:var(--pk);-webkit-tap-highlight-color:transparent}
 .cp-avatar-wrap{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);z-index:2}
-.cp-avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--pk),#FFB3CC);border:4px solid var(--white);box-shadow:0 4px 20px rgba(255,107,157,.3);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:36px}
+.cp-avatar{width:80px;height:80px;border-radius:50%;background:var(--pk);border:4px solid var(--white);box-shadow:0 4px 20px rgba(91,123,106,.3);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:36px}
 .cp-avatar img{width:100%;height:100%;object-fit:cover}
 .cp-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:52px 20px 20px;text-align:center}
 .cp-name{font-size:22px;font-weight:800;color:var(--black);margin-bottom:4px}
@@ -245,28 +289,28 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 .cp-stat{text-align:center}
 .cp-stat-n{font-size:18px;font-weight:800;color:var(--pk)}
 .cp-stat-l{font-size:11px;color:var(--gray);margin-top:1px}
-.cp-actions{display:flex;gap:10px;justify-content:center;margin-bottom:24px}
+.cp-actions{display:flex;gap:10px;justify-content:center;margin-bottom:12px}
 .cp-action-btn{padding:10px 24px;border-radius:22px;border:none;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;-webkit-tap-highlight-color:transparent}
-.cp-action-btn.primary{background:linear-gradient(135deg,var(--pk),var(--pkl));color:#fff;box-shadow:0 4px 12px rgba(255,107,157,.3)}
+.cp-action-btn.primary{background:var(--pk);color:#fff;box-shadow:0 4px 12px rgba(91,123,106,.3)}
 .cp-action-btn.secondary{background:var(--rose);color:var(--pk);border:1.5px solid var(--pkb)}
 .cp-section{text-align:left;margin-bottom:16px}
 .cp-section-title{font-size:12px;font-weight:800;color:var(--pk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
-.cp-tag{display:inline-block;padding:4px 12px;background:rgba(255,107,157,.1);color:var(--pk);border-radius:20px;font-size:12px;font-weight:700;margin:3px}
+.cp-tag{display:inline-block;padding:4px 12px;background:rgba(91,123,106,.1);color:var(--pk);border-radius:20px;font-size:12px;font-weight:700;margin:3px}
 
 /* ===== PAGE 3: MOMENTS ===== */
 .moments-header{position:relative;height:180px;flex-shrink:0;overflow:hidden}
-.moments-cover{width:100%;height:100%;object-fit:cover;background:linear-gradient(135deg,#FFE0EC,#C8B0FF)}
+.moments-cover{width:100%;height:100%;object-fit:cover;background:#E8E4DE}
 .moments-cover-img{width:100%;height:100%;object-fit:cover}
 .moments-cover-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 30%,rgba(0,0,0,.25))}
-.moments-my-av{position:absolute;bottom:10px;right:20px;width:60px;height:60px;border-radius:14px;border:3px solid var(--white);overflow:hidden;background:linear-gradient(135deg,var(--pk),#FFB3CC);display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 4px 14px rgba(0,0,0,.15);z-index:2}
+.moments-my-av{position:absolute;bottom:10px;right:20px;width:60px;height:60px;border-radius:14px;border:3px solid var(--white);overflow:hidden;background:var(--pk);display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 4px 14px rgba(0,0,0,.15);z-index:2}
 .moments-my-av img{width:100%;height:100%;object-fit:cover}
 .moments-my-name{position:absolute;bottom:24px;right:90px;font-size:15px;font-weight:800;color:var(--white);text-shadow:0 1px 6px rgba(0,0,0,.4);z-index:2}
 .moments-tool{position:absolute;top:calc(10px + var(--st));right:14px;display:flex;gap:8px}
 .moments-tool-btn{background:rgba(255,255,255,.8);backdrop-filter:blur(10px);border:none;border-radius:20px;padding:6px 12px;font-size:13px;font-weight:700;color:var(--pk);cursor:pointer;-webkit-tap-highlight-color:transparent}
 .moments-feed{padding:32px 14px 14px}
-.moment-card{background:var(--white);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(255,107,157,.08);border:1px solid rgba(255,107,157,.06)}
+.moment-card{background:var(--white);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(91,123,106,.08);border:1px solid rgba(91,123,106,.06)}
 .moment-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.moment-av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--pk),#FFB3CC);display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0;border:2px solid var(--pkb)}
+.moment-av{width:40px;height:40px;border-radius:50%;background:var(--pk);display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0;border:2px solid var(--pkb)}
 .moment-av img{width:100%;height:100%;object-fit:cover}
 .moment-who{font-size:14px;font-weight:700;color:var(--black)}
 .moment-when{font-size:11px;color:var(--gl);margin-top:1px}
@@ -278,7 +322,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 .moment-img{aspect-ratio:1;background:#EEE;border-radius:8px;overflow:hidden}
 .moment-img img{width:100%;height:100%;object-fit:cover}
 .moment-loc{font-size:12px;color:var(--pk);font-weight:600;margin-bottom:8px}
-.moment-actions{display:flex;justify-content:flex-end;gap:12px;padding-top:8px;border-top:1px solid rgba(255,107,157,.08)}
+.moment-actions{display:flex;justify-content:flex-end;gap:12px;padding-top:8px;border-top:1px solid rgba(91,123,106,.08)}
 .ma-btn{background:none;border:none;cursor:pointer;font-size:13px;color:var(--gray);font-weight:600;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent}
 .ma-btn.liked{color:var(--red)}
 .moment-likes{font-size:13px;color:var(--pk);font-weight:600;margin-bottom:6px}
@@ -287,11 +331,11 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 .mc-who{font-weight:700;color:var(--pk)}
 
 /* GUESTBOOK */
-.guestbook-card{background:var(--white);border-radius:16px;margin:14px;padding:14px;box-shadow:0 2px 8px rgba(255,107,157,.08);border:1px solid rgba(255,107,157,.06)}
+.guestbook-card{background:var(--white);border-radius:16px;margin:14px;padding:14px;box-shadow:0 2px 8px rgba(91,123,106,.08);border:1px solid rgba(91,123,106,.06)}
 .gb-title{font-size:15px;font-weight:800;color:var(--black);margin-bottom:12px;display:flex;align-items:center;gap:6px}
-.gb-item{padding:10px 0;border-bottom:1px solid rgba(255,107,157,.08);display:flex;gap:10px}
+.gb-item{padding:10px 0;border-bottom:1px solid rgba(91,123,106,.08);display:flex;gap:10px}
 .gb-item:last-child{border:none}
-.gb-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--pk),#FFB3CC);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;overflow:hidden;border:1.5px solid var(--pkb)}
+.gb-av{width:36px;height:36px;border-radius:50%;background:var(--pk);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;overflow:hidden;border:1.5px solid var(--pkb)}
 .gb-av img{width:100%;height:100%;object-fit:cover}
 .gb-content{flex:1}
 .gb-who{font-size:13px;font-weight:700;color:var(--pk)}
@@ -301,14 +345,14 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 
 /* ===== PAGE 4: SETTINGS ===== */
 .settings-wrap{padding:14px}
-.settings-my-card{background:linear-gradient(135deg,#FFE4EE,#F8E8FF);border-radius:18px;padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:16px;border:1.5px solid var(--pkb);cursor:pointer;-webkit-tap-highlight-color:transparent}
-.settings-my-av{width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,var(--pk),#FFB3CC);display:flex;align-items:center;justify-content:center;font-size:26px;overflow:hidden;border:3px solid var(--white);box-shadow:0 4px 14px rgba(255,107,157,.25)}
+.settings-my-card{background:var(--rose);border-radius:18px;padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:16px;border:1.5px solid var(--pkb);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.settings-my-av{width:58px;height:58px;border-radius:50%;background:var(--pk);display:flex;align-items:center;justify-content:center;font-size:26px;overflow:hidden;border:3px solid var(--white);box-shadow:0 4px 14px rgba(91,123,106,.25)}
 .settings-my-av img{width:100%;height:100%;object-fit:cover}
 .settings-my-name{font-size:18px;font-weight:800;color:var(--black)}
 .settings-my-sub{font-size:12px;color:var(--gray);margin-top:2px}
-.settings-group{background:var(--white);border-radius:16px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 6px rgba(255,107,157,.07)}
+.settings-group{background:var(--white);border-radius:16px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 6px rgba(91,123,106,.07)}
 .settings-group-title{font-size:11px;font-weight:800;color:var(--pk);text-transform:uppercase;letter-spacing:.5px;padding:12px 16px 6px}
-.settings-item{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid rgba(255,107,157,.07);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s}
+.settings-item{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid rgba(91,123,106,.07);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s}
 .settings-item:last-child{border:none}
 .settings-item:active{background:var(--rose)}
 .si-left{display:flex;align-items:center;gap:10px}
@@ -322,19 +366,19 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 #msg-action-modal,#msg-edit-modal{z-index:3500}
 @media(min-width:600px){.moverlay{align-items:center}}
 @keyframes fdin{from{opacity:0}to{opacity:1}}
-.modal{background:var(--white);border-radius:24px 24px 0 0;width:100%;max-width:560px;max-height:92dvh;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(255,107,157,.18);animation:mslide .28s cubic-bezier(.34,1.56,.64,1);overflow:hidden;border:1.5px solid var(--pkb);border-bottom:none;padding-bottom:var(--sb)}
+.modal{background:var(--white);border-radius:24px 24px 0 0;width:100%;max-width:560px;max-height:92dvh;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(91,123,106,.18);animation:mslide .28s cubic-bezier(.34,1.56,.64,1);overflow:hidden;border:1.5px solid var(--pkb);border-bottom:none;padding-bottom:var(--sb)}
 @media(min-width:600px){.modal{border-radius:24px;border-bottom:1.5px solid var(--pkb);padding-bottom:0;max-height:88dvh;animation:mscale .28s cubic-bezier(.34,1.56,.64,1)}}
 @keyframes mslide{from{transform:translateY(60px);opacity:0}to{transform:none;opacity:1}}
 @keyframes mscale{from{opacity:0;transform:scale(.88) translateY(20px)}to{opacity:1;transform:none}}
-.mhdr{padding:16px 18px 12px;background:linear-gradient(160deg,#FFE8F0,#FFF5F8);border-bottom:1.5px solid var(--pkb);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.mtitle{font-size:17px;font-weight:800;background:linear-gradient(90deg,var(--pkd),var(--pkl));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.mcls{width:28px;height:28px;border-radius:50%;background:rgba(255,107,157,.12);border:none;cursor:pointer;font-size:13px;color:var(--pk);display:flex;align-items:center;justify-content:center;font-weight:700;-webkit-tap-highlight-color:transparent}
-.mcls:active{background:rgba(255,107,157,.22)}
+.mhdr{padding:16px 18px 12px;background:var(--pkp);border-bottom:1.5px solid var(--pkb);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.mtitle{font-size:17px;font-weight:600;color:var(--pk)}
+.mcls{width:28px;height:28px;border-radius:50%;background:rgba(91,123,106,.12);border:none;cursor:pointer;font-size:13px;color:var(--pk);display:flex;align-items:center;justify-content:center;font-weight:700;-webkit-tap-highlight-color:transparent}
+.mcls:active{background:rgba(91,123,106,.22)}
 .mbody{padding:16px 18px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1}
 .mfoot{padding:12px 18px;border-top:1.5px solid var(--pkb);display:flex;gap:8px;justify-content:flex-end;background:#FDFAFB;flex-shrink:0}
 .tabs{display:flex;gap:3px;background:#F8EFF3;padding:4px;border-radius:13px;margin-bottom:16px}
 .tbtn{flex:1;padding:7px 4px;border:none;background:none;border-radius:10px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;color:var(--gray);transition:all .2s;-webkit-tap-highlight-color:transparent}
-.tbtn.on{background:var(--white);color:var(--pk);box-shadow:0 2px 6px rgba(255,107,157,.15)}
+.tbtn.on{background:var(--white);color:var(--pk);box-shadow:0 2px 6px rgba(91,123,106,.15)}
 .tpanel{display:none}.tpanel.on{display:block}
 .fg{margin-bottom:14px}
 .fl{display:block;font-size:11px;font-weight:800;color:var(--pk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
@@ -345,10 +389,10 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 .sep{height:1px;background:var(--pkb);margin:14px 0}
 .btn{padding:10px 16px;border-radius:12px;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;border:none;-webkit-tap-highlight-color:transparent}
 .btn:active{transform:scale(.97)}
-.btn-p{background:linear-gradient(135deg,var(--pk),var(--pkl));color:#fff;box-shadow:0 4px 12px rgba(255,107,157,.3)}
+.btn-p{background:var(--pk);color:#fff;box-shadow:0 4px 12px rgba(91,123,106,.3)}
 .btn-s{background:#F0E8EC;color:var(--pk)}
 .btn-s:active{background:#E8D8E0}
-.btn-d{background:linear-gradient(135deg,#FF4466,#FF6B6B);color:#fff}
+.btn-d{background:var(--red);color:#fff}
 .chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
 .chip{padding:6px 12px;border-radius:20px;background:var(--rose);border:1.5px solid var(--pkb);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
 .chip.nick{color:var(--pkd)}.chip.nick.on,.chip.nick:active{background:var(--pk);color:#fff;border-color:var(--pk)}
@@ -373,10 +417,10 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 .bub-preview{border-radius:16px;padding:16px;margin-bottom:16px;background:var(--pkp);border:1.5px solid var(--pkb);display:flex;flex-direction:column;gap:10px}
 .bub-preview-row{display:flex;gap:8px;align-items:flex-end}
 .bub-preview-row.user{flex-direction:row-reverse}
-.bub-preview-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;background:linear-gradient(135deg,var(--pk),#FFB3CC);border:1.5px solid var(--pkb);overflow:hidden}
+.bub-preview-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;background:var(--pk);border:1.5px solid var(--pkb);overflow:hidden}
 .bub-preview-bub{padding:9px 14px;border-radius:18px;font-size:14px;max-width:70%;word-break:break-word;position:relative}
-.bub-preview-bub.user{background:linear-gradient(135deg,var(--bfrom),var(--bto));color:#fff;border-bottom-right-radius:4px}
-.bub-preview-bub.ai{background:var(--white);color:var(--black);border-bottom-left-radius:4px;border:1px solid rgba(255,107,157,.1);box-shadow:0 2px 6px rgba(255,107,157,.1)}
+.bub-preview-bub.user{background:var(--bfrom);color:#fff;border-bottom-right-radius:4px}
+.bub-preview-bub.ai{background:var(--white);color:var(--black);border-bottom-left-radius:4px;border:1px solid rgba(91,123,106,.1);box-shadow:0 2px 6px rgba(91,123,106,.1)}
 .bub-preview.pv-wechat .bub-preview-bub.user{background:#95EC69;color:#000;border-radius:8px;border-bottom-right-radius:2px}
 .bub-preview.pv-wechat .bub-preview-bub.ai{background:#fff;border-radius:8px;border-bottom-left-radius:2px;border:1px solid #E8E8E8;box-shadow:none}
 .bub-preview.pv-line .bub-preview-row,.bub-preview.pv-line-yellow .bub-preview-row{align-items:flex-start}
@@ -391,7 +435,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 .bub-preview.pv-imsg .bub-preview-bub.user{background:#007AFF;color:#fff;border-radius:18px;border-bottom-right-radius:4px}
 .bub-preview.pv-imsg .bub-preview-bub.ai{background:#E9E9EB;color:#000;border-radius:18px;border-bottom-left-radius:4px;border:none;box-shadow:none}
 .bub-presets{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-.bub-preset-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--white);border-radius:14px;border:1.5px solid rgba(255,107,157,.08);box-shadow:0 1px 4px rgba(255,107,157,.06)}
+.bub-preset-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--white);border-radius:14px;border:1.5px solid rgba(91,123,106,.08);box-shadow:0 1px 4px rgba(91,123,106,.06)}
 .bub-preset-main{flex:1;min-width:0}
 .bub-preset-name{font-size:14px;font-weight:700;color:var(--black)}
 .bub-preset-meta{font-size:12px;color:var(--gray);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -400,9 +444,9 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 .msg-menu-preview{background:var(--rose);border-radius:14px;padding:12px;font-size:13px;line-height:1.55;color:var(--black);border:1.5px solid var(--pkb);margin-bottom:14px;max-height:160px;overflow-y:auto;white-space:pre-wrap}
 .msg-menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .fav-list{display:flex;flex-direction:column;gap:12px}
-.fav-group{background:var(--white);border-radius:16px;padding:14px;border:1.5px solid rgba(255,107,157,.08);box-shadow:0 1px 6px rgba(255,107,157,.06)}
+.fav-group{background:var(--white);border-radius:16px;padding:14px;border:1.5px solid rgba(91,123,106,.08);box-shadow:0 1px 6px rgba(91,123,106,.06)}
 .fav-group-title{font-size:14px;font-weight:800;color:var(--black);margin-bottom:10px}
-.fav-item{padding:10px 0;border-top:1px solid rgba(255,107,157,.08)}
+.fav-item{padding:10px 0;border-top:1px solid rgba(91,123,106,.08)}
 .fav-item:first-child{border-top:none;padding-top:0}
 .fav-meta{font-size:11px;color:var(--pk);font-weight:700;margin-bottom:4px}
 .fav-text{font-size:13px;color:var(--black);line-height:1.55;white-space:pre-wrap;word-break:break-word}
@@ -413,11 +457,11 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 .wpopt{aspect-ratio:4/3;border-radius:12px;cursor:pointer;border:3px solid transparent;transition:border-color .2s;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
 .wpopt.on{border-color:var(--pk)}
 .wpopt span{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:11px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.4)}
-.wp0{background:linear-gradient(135deg,#FFF0F5,#F5F0FF)}.wp1{background:linear-gradient(135deg,#1a0a2e,#4a1060)}.wp2{background:linear-gradient(135deg,#fff5f7,#FFD6E0)}.wp3{background:linear-gradient(135deg,#f0fff8,#C8FFE4)}.wp4{background:linear-gradient(135deg,#f5f0ff,#E0D0FF)}.wp5{background:linear-gradient(135deg,#E8E8E8,#C0C0C0);font-size:20px}
+.wp0{background:#F5F3EF}.wp1{background:linear-gradient(135deg,#1a0a2e,#4a1060)}.wp2{background:linear-gradient(135deg,#fff5f7,#FFD6E0)}.wp3{background:linear-gradient(135deg,#f0fff8,#C8FFE4)}.wp4{background:linear-gradient(135deg,#f5f0ff,#E0D0FF)}.wp5{background:linear-gradient(135deg,#E8E8E8,#C0C0C0);font-size:20px}
 .cdots{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px}
 .cdot{width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;box-shadow:0 2px 6px rgba(0,0,0,.15);-webkit-tap-highlight-color:transparent;transition:border-color .15s}
 .cdot.on{border-color:var(--black)}
-.tog-box{background:linear-gradient(135deg,#FFE4EE,#F8E8FF);border-radius:13px;padding:12px 14px;border:1.5px solid var(--pkb);margin-bottom:14px}
+.tog-box{background:var(--rose);border-radius:13px;padding:12px 14px;border:1.5px solid var(--pkb);margin-bottom:14px}
 .tog-lbl{font-size:11px;font-weight:800;color:var(--pk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .tog-cnt{font-size:28px;font-weight:800;color:var(--pkd);line-height:1}
 .tog-cnt span{font-size:13px;font-weight:700;color:var(--pk)}
@@ -430,9 +474,9 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 .csp-back{font-size:22px;color:var(--pk);background:none;border:none;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
 .csp-title{font-size:17px;font-weight:800;color:var(--black);flex:1}
 .csp-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px}
-.csp-section{background:var(--white);border-radius:16px;margin-bottom:14px;overflow:hidden;box-shadow:0 1px 6px rgba(255,107,157,.07)}
+.csp-section{background:var(--white);border-radius:16px;margin-bottom:14px;overflow:hidden;box-shadow:0 1px 6px rgba(91,123,106,.07)}
 .csp-section-title{font-size:11px;font-weight:800;color:var(--pk);text-transform:uppercase;letter-spacing:.5px;padding:12px 16px 6px}
-.csp-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(255,107,157,.07)}
+.csp-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(91,123,106,.07)}
 .csp-row:last-child{border:none}
 .csp-row-lbl{font-size:14px;font-weight:600;color:var(--black)}
 .csp-row-sub{font-size:12px;color:var(--gray);margin-top:1px}
@@ -454,9 +498,9 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 .gs-res-char{font-size:11px;font-weight:700;color:var(--pk);margin-bottom:2px}
 .gs-res-preview{font-size:13px;color:var(--black);line-height:1.4}
 .gs-res-time{font-size:11px;color:var(--gl);margin-top:2px}
-#poke-toast{position:fixed;top:74px;left:50%;transform:translateX(-50%) scale(.85);background:rgba(255,107,157,.92);color:#fff;padding:9px 20px;border-radius:28px;font-size:14px;font-weight:700;z-index:9998;opacity:0;transition:all .28s cubic-bezier(.34,1.56,.64,1);pointer-events:none;backdrop-filter:blur(10px)}
+#poke-toast{position:fixed;top:74px;left:50%;transform:translateX(-50%) scale(.85);background:rgba(91,123,106,.92);color:#fff;padding:9px 20px;border-radius:28px;font-size:14px;font-weight:700;z-index:9998;opacity:0;transition:all .28s cubic-bezier(.34,1.56,.64,1);pointer-events:none;backdrop-filter:blur(10px)}
 #poke-toast.show{opacity:1;transform:translateX(-50%) scale(1)}
-#toast{position:fixed;bottom:calc(80px + var(--sb));left:50%;transform:translateX(-50%) translateY(50px);background:rgba(45,27,37,.82);backdrop-filter:blur(10px);color:#fff;padding:10px 20px;border-radius:22px;font-size:14px;font-weight:700;z-index:9999;transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;pointer-events:none;border:1px solid rgba(255,107,157,.3)}
+#toast{position:fixed;bottom:calc(80px + var(--sb));left:50%;transform:translateX(-50%) translateY(50px);background:rgba(45,27,37,.82);backdrop-filter:blur(10px);color:#fff;padding:10px 20px;border-radius:22px;font-size:14px;font-weight:700;z-index:9999;transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;pointer-events:none;border:1px solid rgba(91,123,106,.3)}
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 
 /* COMPOSE MOMENT */
@@ -475,13 +519,60 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
   <!-- PAGE 1: MESSAGES -->
   <div class="page active" id="pg-msg">
     <div class="pg-hdr">
-      <button class="pg-btn gs-search-btn" onclick="openGlobalSearch()">🔍</button>
-      <div class="pg-title">消息</div>
-      <button class="pg-btn" onclick="openNewChatPicker()">✏️</button>
+      <div style="width:32px"></div>
+      <div class="pg-title" style="font-family:'Georgia','Palatino Linotype',serif;font-style:italic;font-weight:700;font-size:22px;letter-spacing:-.3px">Jinger's Palace</div>
+      <button class="pg-btn" onclick="openNewChatPicker()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
     </div>
     <div class="scroll">
+      <!-- profile card -->
+      <div class="msg-profile-wrap">
+        <div class="msg-profile-card" id="msg-profile-card">
+          <!-- stats row (right of avatar) -->
+          <div class="profile-stats">
+            <div class="profile-stat" onclick="openGuestbookPage()">
+              <div class="profile-stat-n">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              </div>
+              <div class="profile-stat-l">Mailbox</div>
+            </div>
+            <div class="profile-stat" onclick="editStatNum('followers')">
+              <div class="profile-stat-n" id="stat-followers">0</div>
+              <div class="profile-stat-l">Followers</div>
+            </div>
+            <div class="profile-stat" onclick="editStatNum('following')">
+              <div class="profile-stat-n" id="stat-following">0</div>
+              <div class="profile-stat-l">Following</div>
+            </div>
+          </div>
+          <!-- avatar centered -->
+          <div class="msg-av-wrap">
+            <div class="msg-profile-av" id="msg-profile-av" onclick="uploadMsgAvatar()"></div>
+            <button class="msg-av-plus" onclick="uploadMsgAvatar()">+</button>
+          </div>
+          <!-- name + sig below avatar -->
+          <div class="msg-profile-name" id="msg-profile-name">我</div>
+          <div class="msg-profile-sig" id="msg-profile-sig" onclick="openMyProfileModal()"></div>
+          <!-- edit profile button -->
+          <button class="msg-edit-profile-btn" onclick="openMyProfileModal()">Edit Profile</button>
+        </div>
+      </div><!-- /msg-profile-wrap -->
+      <!-- mini calendar -->
+      <div class="msg-calendar" id="msg-calendar"></div>
+      <!-- tabs -->
+      <div class="msg-tabs">
+        <div class="msg-tab on" id="msgtab-all" onclick="switchMsgTab('all')">All</div>
+        <div class="msg-tab" id="msgtab-groups" onclick="switchMsgTab('groups')">Groups</div>
+      </div>
+      <!-- search -->
+      <div class="msg-search-wrap">
+        <div class="msg-search-bar">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" placeholder="搜索对话…" id="msg-search-inp" oninput="filterChatList()" style="font-size:16px">
+        </div>
+      </div>
+      <!-- chat list -->
       <div class="chat-list-wrap" id="chat-list-wrap">
-        <div style="text-align:center;padding:40px 20px;color:var(--gl);font-size:14px;font-weight:600" id="no-chats-hint">还没有对话，去「列表」点击联系人开始聊吧 💕</div>
+        <div style="text-align:center;padding:40px 20px;color:var(--gl);font-size:14px;font-weight:500" id="no-chats-hint">还没有对话，去「列表」点击联系人开始聊吧</div>
       </div>
     </div>
   </div>
@@ -522,17 +613,6 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
       </div>
 
       <!-- Guestbook Entry Card -->
-      <div class="guestbook-card" onclick="openGuestbookPage()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;-webkit-tap-highlight-color:transparent">
-        <div style="display:flex;align-items:center;gap:11px">
-          <div style="width:40px;height:40px;background:linear-gradient(135deg,#FF6B9D,#FFB3CC);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📌</div>
-          <div>
-            <div style="font-size:15px;font-weight:800;color:var(--black)">留言板</div>
-            <div style="font-size:12px;color:var(--gray);margin-top:2px" id="gb-count-preview">点击查看所有留言</div>
-          </div>
-        </div>
-        <div style="font-size:22px;color:var(--gl);line-height:1">›</div>
-      </div>
-
       <!-- Feed -->
       <div style="display:flex;justify-content:space-between;align-items:center;padding:0 14px 8px">
         <div style="font-size:14px;font-weight:800;color:var(--black)">动态</div>
@@ -553,7 +633,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
       <div class="settings-wrap">
         <!-- My card -->
         <div class="settings-my-card" onclick="openMyProfileModal()">
-          <div class="settings-my-av" id="settings-my-av">😊</div>
+          <div class="settings-my-av" id="settings-my-av"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
           <div>
             <div class="settings-my-name" id="settings-my-name">点击设置昵称</div>
             <div class="settings-my-sub" id="settings-my-sig">点击切换身份</div>
@@ -563,11 +643,11 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
         <div class="settings-group">
           <div class="settings-group-title">聊天</div>
           <div class="settings-item" onclick="openBubbleSettings()">
-            <div class="si-left"><div class="si-icon" style="background:#FFE4EE">💬</div><div class="si-label">气泡样式设置</div></div>
+            <div class="si-left"><div class="si-icon" style="background:#EDE9E3"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div class="si-label">气泡样式设置</div></div>
             <div class="si-right"><span id="cur-bubble-name">默认粉</span><span class="si-arrow">›</span></div>
           </div>
           <div class="settings-item" onclick="openAppearanceModal()">
-            <div class="si-left"><div class="si-icon" style="background:#F3EEFF">🎨</div><div class="si-label">外观 / 壁纸</div></div>
+            <div class="si-left"><div class="si-icon" style="background:#EDE9E3"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div class="si-label">外观 / 壁纸</div></div>
             <div class="si-right"><span class="si-arrow">›</span></div>
           </div>
         </div>
@@ -575,7 +655,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
         <div class="settings-group">
           <div class="settings-group-title">云端</div>
           <div class="settings-item" onclick="openCloudSyncModal()">
-            <div class="si-left"><div class="si-icon" style="background:#E8EEFF">☁️</div><div class="si-label">Supabase 云端同步</div></div>
+            <div class="si-left"><div class="si-icon" style="background:#EDE9E3"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg></div><div class="si-label">Supabase 云端同步</div></div>
             <div class="si-right"><span id="cloud-sync-badge" style="font-size:12px;color:var(--pk);font-weight:700;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span><span class="si-arrow">›</span></div>
           </div>
         </div>
@@ -583,23 +663,18 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
         <div class="settings-group">
           <div class="settings-group-title">数据</div>
           <div class="settings-item" onclick="openMemoryModal()">
-            <div class="si-left"><div class="si-icon" style="background:#E8FFF4">🧠</div><div class="si-label">全局记忆管理</div></div>
+            <div class="si-left"><div class="si-icon" style="background:#EDE9E3"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 2a5 5 0 0 1 5 5v1a5 5 0 0 1-5 5 5 5 0 0 1-5-5V7a5 5 0 0 1 5-5z"/><path d="M2 20c0-4 4-7 10-7s10 3 10 7"/></svg></div><div class="si-label">全局记忆管理</div></div>
             <div class="si-right"><span class="si-arrow">›</span></div>
           </div>
           <div class="settings-item" onclick="openFavoritesModal()">
-            <div class="si-left"><div class="si-icon" style="background:#FFF7D8">⭐</div><div class="si-label">收藏消息</div></div>
+            <div class="si-left"><div class="si-icon" style="background:#EDE9E3"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="si-label">收藏消息</div></div>
             <div class="si-right"><span class="si-arrow">›</span></div>
           </div>
           <div class="settings-item" onclick="openExportModal()">
-            <div class="si-left"><div class="si-icon" style="background:#FFF4E0">📤</div><div class="si-label">导出数据</div></div>
+            <div class="si-left"><div class="si-icon" style="background:#EDE9E3"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div class="si-label">导出数据</div></div>
             <div class="si-right"><span class="si-arrow">›</span></div>
           </div>
         </div>
-
-        <div class="settings-group">
-          <div class="settings-group-title">纪念</div>
-          <div class="settings-item" onclick="openTogetherModal()">
-            <div class="si-left"><div class="si-icon" style="background:#FFE4EE">💗</div><div class="si-label">纪念日 / 在一起天数</div></div>
             <div class="si-right"><span id="together-days-preview" style="color:var(--pk);font-weight:700"></span><span class="si-arrow">›</span></div>
           </div>
         </div>
@@ -607,7 +682,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
         <div class="settings-group">
           <div class="settings-group-title">AI 设置</div>
           <div class="settings-item" onclick="openGlobalSettings()">
-            <div class="si-left"><div class="si-icon" style="background:#E8F4FF">⚙️</div><div class="si-label">API & 全局设定</div></div>
+            <div class="si-left"><div class="si-icon" style="background:#EDE9E3"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><div class="si-label">API & 全局设定</div></div>
             <div class="si-right"><span class="si-arrow">›</span></div>
           </div>
         </div>
@@ -619,10 +694,10 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 
 <!-- BOTTOM TAB -->
 <div id="tabbar">
-  <div class="tab on" data-page="pg-msg" onclick="switchTab('pg-msg',this)"><div class="ticon" style="position:relative">💬<span id="msg-tab-badge" style="position:absolute;top:-5px;right:-6px;background:var(--pk);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;display:none"></span></div><div class="tlbl">消息</div></div>
-  <div class="tab" data-page="pg-contacts" onclick="switchTab('pg-contacts',this)"><div class="ticon">👥</div><div class="tlbl">列表</div></div>
-  <div class="tab" data-page="pg-moments" onclick="switchTab('pg-moments',this)"><div class="ticon">🌸</div><div class="tlbl">动态</div></div>
-  <div class="tab" data-page="pg-settings" onclick="switchTab('pg-settings',this)"><div class="ticon">👤</div><div class="tlbl">我</div></div>
+  <div class="tab on" data-page="pg-msg" onclick="switchTab('pg-msg',this)"><div class="ticon" style="position:relative"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span id="msg-tab-badge" style="position:absolute;top:-5px;right:-6px;background:var(--pk);color:#fff;border-radius:10px;font-size:10px;font-weight:500;padding:1px 5px;min-width:16px;text-align:center;display:none"></span></div><div class="tlbl">消息</div></div>
+  <div class="tab" data-page="pg-contacts" onclick="switchTab('pg-contacts',this)"><div class="ticon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="tlbl">列表</div></div>
+  <div class="tab" data-page="pg-moments" onclick="switchTab('pg-moments',this)"><div class="ticon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></div><div class="tlbl">动态</div></div>
+  <div class="tab" data-page="pg-settings" onclick="switchTab('pg-settings',this)"><div class="ticon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="tlbl">我</div></div>
 </div>
 
 <!-- ===== CHAT VIEW ===== -->
@@ -691,6 +766,9 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
       <button class="cp-action-btn primary" onclick="startChatFromProfile()">💬 发消息</button>
       <button class="cp-action-btn secondary" onclick="handlePokeFromProfile()">👆 拍一拍</button>
     </div>
+    <div class="cp-actions" style="margin-top:0">
+      <button class="cp-action-btn secondary" style="flex:1" onclick="openNotebook(S._profileCharId)">📓 我们的日记本</button>
+    </div>
     <div class="cp-section">
       <div class="cp-section-title">性格标签</div>
       <div id="cp-tags"></div>
@@ -700,6 +778,29 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
       <div id="cp-persona" style="font-size:14px;color:var(--gray);line-height:1.6"></div>
     </div>
   </div>
+</div>
+
+<!-- ===== NOTEBOOK PAGE ===== -->
+<div id="pg-notebook" style="position:fixed;inset:0;z-index:3500;display:none;flex-direction:column;background:var(--bg)">
+  <div class="pg-hdr">
+    <button class="pg-btn" onclick="closeNotebook()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <div class="pg-title" id="nb-title">日记本</div>
+    <button class="pg-btn" onclick="addNotebookEntry()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+  </div>
+  <div class="scroll" id="nb-list" style="padding:12px 14px 24px">
+    <div id="nb-empty" style="text-align:center;padding:60px 20px;color:var(--gl);font-size:14px">还没有日记，点击右上角 + 开始记录</div>
+  </div>
+</div>
+
+<!-- ===== NOTEBOOK ENTRY EDITOR ===== -->
+<div id="nb-editor" style="position:fixed;inset:0;z-index:3600;display:none;flex-direction:column;background:var(--white)">
+  <div class="pg-hdr">
+    <button class="pg-btn" onclick="closeNbEditor()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <div class="pg-title" id="nb-editor-title">新日记</div>
+    <button class="pg-btn" onclick="saveNbEntry()" style="color:var(--pk);font-size:14px;font-weight:600;width:auto;padding:0 4px">保存</button>
+  </div>
+  <div style="padding:12px 16px;border-bottom:1px solid var(--pkb);font-size:12px;color:var(--gray)" id="nb-editor-date"></div>
+  <textarea id="nb-editor-body" style="flex:1;border:none;outline:none;padding:16px;font-size:15px;font-family:var(--font);color:var(--black);background:var(--white);resize:none;line-height:1.7" placeholder="写下今天的故事…"></textarea>
 </div>
 
 <!-- ===== CHAT SETTINGS PANEL ===== -->
@@ -1073,7 +1174,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
       </div>
       <div class="fg"><label class="fl">默认气泡颜色（我）</label>
         <div class="cdots">
-          <div class="cdot on" style="background:linear-gradient(135deg,#FF6B9D,#FF9AC3)" onclick="setBub('#FF6B9D','#FF9AC3',this)"></div>
+          <div class="cdot on" style="background:var(--pk)" onclick="setBub('#5B7B6A','#5B7B6A',this)"></div>
           <div class="cdot" style="background:linear-gradient(135deg,#007AFF,#5AC8FA)" onclick="setBub('#007AFF','#5AC8FA',this)"></div>
           <div class="cdot" style="background:linear-gradient(135deg,#AF52DE,#DA8FFF)" onclick="setBub('#AF52DE','#DA8FFF',this)"></div>
           <div class="cdot" style="background:linear-gradient(135deg,#34C759,#7EE89A)" onclick="setBub('#34C759','#7EE89A',this)"></div>
@@ -1132,27 +1233,6 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
       <div class="fg"><label class="fl">我的预设</label><div id="bubble-presets-list" class="bub-presets"></div></div>
     </div>
     <div class="mfoot"><button class="btn btn-s" onclick="resetBubblePresetEditor()">清空</button><button class="btn btn-s" onclick="closeMod('bubble-settings-modal')">关闭</button></div>
-  </div>
-</div>
-
-<!-- ===== TOGETHER MODAL ===== -->
-<div id="together-modal" class="moverlay" style="display:none" onclick="closeMod('together-modal')">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="mhdr"><div class="mtitle">💗 纪念日</div><button class="mcls" onclick="closeMod('together-modal')">✕</button></div>
-    <div class="mbody">
-      <div class="tog-box"><div class="tog-lbl">💕 在一起已经</div><div class="tog-cnt" id="tog-cnt">-- <span>天</span></div></div>
-      <div class="fg"><label class="fl">在一起的日期</label><input class="fi" type="date" id="tog-date"></div>
-      <div class="sep"></div>
-      <div class="fg"><label class="fl">添加纪念日</label>
-        <div style="display:flex;gap:7px;flex-wrap:wrap">
-          <input class="fi" id="ann-name" placeholder="名称…" style="flex:1;min-width:100px">
-          <input class="fi" type="date" id="ann-date" style="width:148px">
-          <button class="btn btn-p" onclick="addAnn()" style="padding:9px 12px">+</button>
-        </div>
-      </div>
-      <div id="ann-list"></div>
-    </div>
-    <div class="mfoot"><button class="btn btn-s" onclick="closeMod('together-modal')">关闭</button><button class="btn btn-p" onclick="saveTog()">💾 保存</button></div>
   </div>
 </div>
 
@@ -1227,7 +1307,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
   <div style="padding:calc(12px + var(--st)) 16px 12px;background:rgba(255,245,248,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1.5px solid var(--pkb);display:flex;align-items:center;gap:10px;flex-shrink:0">
     <button type="button" onclick="closeGuestbookPage()" style="font-size:22px;color:var(--pk);background:none;border:none;cursor:pointer;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent">‹</button>
     <div style="flex:1;font-size:18px;font-weight:800;color:var(--black);text-align:center">📌 留言板</div>
-    <button type="button" onclick="openGuestbookPickFriend()" style="background:linear-gradient(135deg,var(--pk),var(--pkl));color:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent">✨ 邀请</button>
+    <button type="button" onclick="openGuestbookPickFriend()" style="background:var(--pk);color:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent">✨ 邀请</button>
   </div>
   <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px" id="guestbook-page-list"></div>
 </div>
@@ -1342,7 +1422,7 @@ let S = {
   chats:{},   // { charId: {messages,systemPrompt,useMem,autoSum,sumTrig,sumStyle,chatMem,lastSumAt,bubbleStyle,customCSS,chatBg,typingTxt,pokeTxt,showUserAvatar,showAssistantAvatar,showStatus,statusText,allowMultiMsg,autoMsgEnabled,autoMsgEvery,autoMsgUnit,timelineMode,virtualTimeLabel,realTimeResumeMode} }
   chars:{},   // { id: {id,name,remark,sig,emoji,avatarImg,coverImg,nickname,persona,personalities,style,group,createdAt} }
   currentChatId:null,  // = charId
-  settings:{apiKey:'',apiBase:'https://api.deepseek.com/v1',model:'deepseek-reasoner',modelOptions:['deepseek-reasoner','deepseek-chat'],globalSP:'',temperature:1,maxTokens:4096,fontSize:16,bubFrom:'#FF6B9D',bubTo:'#FF9AC3',wallpaper:'default',customWP:null,globalBubble:'default',contactExtraGroups:[],bubblePresets:[]},
+  settings:{apiKey:'',apiBase:'https://api.deepseek.com/v1',model:'deepseek-reasoner',modelOptions:['deepseek-reasoner','deepseek-chat'],globalSP:'',temperature:1,maxTokens:4096,fontSize:16,bubFrom:'#5B7B6A',bubTo:'#5B7B6A',wallpaper:'default',customWP:null,globalBubble:'default',contactExtraGroups:[],bubblePresets:[]},
   memory:'',
   together:{startDate:null,anniversaries:[]},
   moments:[],     // [{id,author,authorId,text,photos,loc,at,perm,ts,likes,comments}]
@@ -1664,7 +1744,6 @@ async function init(){
   const tag=document.getElementById('custom-css-tag');
   if(tag)tag.textContent=S.settings.globalCustomCSS||'';
   applyMyProfile();
-  updTogDayPreview();
   ensureModelUIReady();
   bindModelInputsOnce();
   if(S.settings.apiKey&&S.settings.apiBase)queueModelFetch(true,260);
@@ -1811,8 +1890,6 @@ function fullReRender(){
   applyWP(S.settings.wallpaper,S.settings.customWP);
   updateCurBubbleName();
   applyMyProfile();
-  updTogDayPreview();
-  updTogBanner();
   const tag=document.getElementById('custom-css-tag');
   if(tag)tag.textContent=S.settings.globalCustomCSS||'';
   const cid=S.currentChatId;
@@ -2019,9 +2096,11 @@ function _ciCtxHide(){
 function renderChatList(){
   const wrap=document.getElementById('chat-list-wrap');
   const hint=document.getElementById('no-chats-hint');
-  const chatCharIds=Object.keys(S.chats).filter(cid=>S.chats[cid].messages?.length>0);
-  // Also show all chars that have a chat entry
-  const allChatIds=Object.keys(S.chats).filter(cid=>!S.chats[cid].hidden);
+  const q=(document.getElementById('msg-search-inp')?.value||'').trim().toLowerCase();
+  let allChatIds=Object.keys(S.chats).filter(cid=>!S.chats[cid].hidden);
+  if(typeof _msgTab!=='undefined'&&_msgTab==='groups'){wrap.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--gl);font-size:14px">群聊功能即将上线</div>';return;}
+  if(typeof _msgTab!=='undefined'&&_msgTab==='unread'){allChatIds=allChatIds.filter(cid=>(S.chats[cid]?.unread||0)>0);}
+  if(q){allChatIds=allChatIds.filter(cid=>{const c=S.chars[cid];if(!c)return false;return(c.remark||c.name||'').toLowerCase().includes(q);});}
   if(!allChatIds.length){hint&&(hint.style.display='');return;}
   hint&&(hint.style.display='none');
   // Sort: pinned first, then by last message time
@@ -2089,8 +2168,6 @@ function openChat(charId){
   applyChatBubble(chat.bubbleStyle||S.settings.globalBubble, chat.customCSS||'');
   // Apply chat background
   applyChatBg(chat.chatBg);
-  // Together banner
-  updTogBanner();
   renderQuoteDraft();
   clearMultiSelectState();
   renderMultiSelectBar();
@@ -3408,7 +3485,7 @@ function searchHistory(){
   if(!msgs.length){res.innerHTML='<div style="padding:8px;color:var(--gl);font-size:13px">无结果</div>';return;}
   const safeQ=escRegExp(q);
   res.innerHTML=msgs.slice(0,15).map(m=>{
-    const hi=getMessagePlainText(m,S.currentChatId).replace(new RegExp(safeQ,'gi'),s=>`<mark style="background:rgba(255,107,157,.25);border-radius:3px">${s}</mark>`);
+    const hi=getMessagePlainText(m,S.currentChatId).replace(new RegExp(safeQ,'gi'),s=>`<mark style="background:rgba(91,123,106,.25);border-radius:3px">${s}</mark>`);
     return`<div style="padding:7px 9px;background:var(--rose);border-radius:9px;margin-bottom:4px;font-size:13px;line-height:1.5;border:1px solid var(--pkb)"><span style="font-size:11px;color:var(--pk);font-weight:700">${m.role==='user'?'我':'AI'} · ${fmtShort(new Date(m.timestamp))}</span><div style="margin-top:3px">${hi}</div></div>`;
   }).join('');
 }
@@ -3915,7 +3992,7 @@ function renderGuestbook(){
       : (char?.emoji||'🤖');
     const charName=esc(char?.remark||char?.name||'未知');
     return `
-      <div style="background:var(--white);border-radius:16px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(255,107,157,.08);border:1px solid rgba(255,107,157,.06)">
+      <div style="background:var(--white);border-radius:16px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(91,123,106,.08);border:1px solid rgba(91,123,106,.06)">
         <div style="display:flex;gap:10px;align-items:flex-start">
           <div class="gb-av">${avc}</div>
           <div style="flex:1;min-width:0">
@@ -4037,6 +4114,13 @@ function applyMyProfile(){
   if(mav){if(p.avatarImg){mav.innerHTML=`<img src="${p.avatarImg}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:14px">`;mav.style.background='none';}else{mav.textContent=p.emoji||'😊';}}
   const mnm=document.getElementById('moments-my-name');if(mnm)mnm.textContent=p.name||'我';
   if(p.momentsCover){const img=document.getElementById('moments-cover-img');if(img){img.src=p.momentsCover;img.style.display='block';}}
+  const mpav=document.getElementById('msg-profile-av');
+  if(mpav){if(p.avatarImg){mpav.innerHTML=`<img src="${p.avatarImg}" alt="" style="width:100%;height:100%;object-fit:cover">`;mpav.style.background='none';}else{mpav.textContent=p.emoji||'😊';mpav.style.background='';}}
+  const mpn=document.getElementById('msg-profile-name');if(mpn)mpn.textContent='@'+(p.name||'我');
+  const mps=document.getElementById('msg-profile-sig');if(mps)mps.textContent=p.sig||'点击添加签名…';
+  const sf=document.getElementById('stat-followers');if(sf)sf.textContent=p.followers||0;
+  const sg=document.getElementById('stat-following');if(sg)sg.textContent=p.following||0;
+  if(typeof renderMsgCalendar==='function')renderMsgCalendar();
 }
 
 function openMyProfileModal(){
@@ -4052,6 +4136,100 @@ function saveMyProfile(){
   S.myProfile.emoji=document.getElementById('my-emoji-inp').value.trim()||'😊';
   S.myProfile.sig=document.getElementById('my-sig-inp').value.trim();
   save();applyMyProfile();closeMod('my-profile-modal');toast('✅ 资料已保存');
+}
+
+// ============================================================
+// MSG PAGE HELPERS
+// ============================================================
+function renderMsgCalendar(){
+  const el=document.getElementById('msg-calendar');if(!el)return;
+  const now=new Date();
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dows=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const todayDow=now.getDay();
+  const weekStart=new Date(now);weekStart.setDate(now.getDate()-todayDow);
+  let html=`<div class="msg-cal-hdr"><span class="msg-cal-title">${months[now.getMonth()]} ${now.getFullYear()}</span></div>`;
+  html+=`<div class="msg-cal-grid">`;
+  dows.forEach(d=>{html+=`<div class="msg-cal-dow">${d}</div>`;});
+  for(let i=0;i<7;i++){
+    const d=new Date(weekStart);d.setDate(weekStart.getDate()+i);
+    const isToday=d.toDateString()===now.toDateString();
+    html+=`<div class="${isToday?'msg-cal-day today':'msg-cal-day'}">${d.getDate()}</div>`;
+  }
+  html+=`</div>`;
+  el.innerHTML=html;
+}
+let _msgTab='all';
+function switchMsgTab(tab){
+  _msgTab=tab;
+  document.getElementById('msgtab-all').classList.toggle('on',tab==='all');
+  document.getElementById('msgtab-groups').classList.toggle('on',tab==='groups');
+  renderChatList();
+}
+function filterChatList(){renderChatList();}
+function uploadMsgAvatar(){
+  const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
+  inp.onchange=e=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{S.myProfile.avatarImg=ev.target.result;save();applyMyProfile();};
+    reader.readAsDataURL(file);
+  };inp.click();
+}
+function editStatNum(key){
+  const cur=S.myProfile[key]||0;
+  const val=prompt(key==='followers'?'Followers 数量:':'Following 数量:',cur);
+  if(val===null)return;
+  S.myProfile[key]=parseInt(val)||0;
+  save();applyMyProfile();
+}
+
+// ============================================================
+// NOTEBOOK
+// ============================================================
+let _nbCharId=null;let _nbEditIdx=null;
+function openNotebook(charId){
+  _nbCharId=charId;
+  const char=S.chars[charId];
+  const title=document.getElementById('nb-title');
+  if(title)title.textContent=(char?.remark||char?.name||'TA')+'的日记本';
+  renderNotebook();
+  document.getElementById('pg-notebook').style.display='flex';
+}
+function closeNotebook(){document.getElementById('pg-notebook').style.display='none';_nbCharId=null;}
+function renderNotebook(){
+  const list=document.getElementById('nb-list');const empty=document.getElementById('nb-empty');
+  if(!list)return;
+  const entries=(S.notebooks||{})[_nbCharId]||[];
+  if(!entries.length){empty&&(empty.style.display='');list.innerHTML='';list.appendChild(empty);return;}
+  empty&&(empty.style.display='none');list.innerHTML='';
+  [...entries].reverse().forEach((e,ri)=>{
+    const idx=entries.length-1-ri;
+    const d=new Date(e.ts);
+    const dateStr=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+    const div=document.createElement('div');div.className='nb-entry';
+    div.innerHTML=`<div class="nb-entry-date">${dateStr}</div><div class="nb-entry-body">${esc(e.body)}</div>`;
+    div.onclick=()=>openNbEditor(idx);list.appendChild(div);
+  });
+}
+function addNotebookEntry(){openNbEditor(null);}
+function openNbEditor(idx){
+  _nbEditIdx=idx;
+  const entries=(S.notebooks||{})[_nbCharId]||[];
+  const e=idx!==null?entries[idx]:null;
+  const now=new Date();
+  document.getElementById('nb-editor-title').textContent=e?'编辑日记':'新日记';
+  document.getElementById('nb-editor-date').textContent=e?new Date(e.ts).toLocaleString('zh-CN'):`${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+  document.getElementById('nb-editor-body').value=e?e.body:'';
+  document.getElementById('nb-editor').style.display='flex';
+}
+function closeNbEditor(){document.getElementById('nb-editor').style.display='none';_nbEditIdx=null;}
+function saveNbEntry(){
+  const body=document.getElementById('nb-editor-body').value.trim();if(!body)return;
+  if(!S.notebooks)S.notebooks={};if(!S.notebooks[_nbCharId])S.notebooks[_nbCharId]=[];
+  if(_nbEditIdx!==null){S.notebooks[_nbCharId][_nbEditIdx].body=body;}
+  else{S.notebooks[_nbCharId].push({ts:Date.now(),body});}
+  save();closeNbEditor();renderNotebook();
 }
 
 // ============================================================
@@ -4270,7 +4448,7 @@ function showStorageWarningModal(percent){
     <div style="font-size:16px;font-weight:800;color:#333;text-align:center;margin-bottom:10px">本地存储快满了（${percent}%）</div>
     <div style="font-size:13px;color:#666;line-height:1.6;margin-bottom:18px">浏览器本地存储只有约 5MB。如果继续存满，<strong>聊天背景图、朋友圈封面图等图片会被自动删除</strong>以腾出空间。<br><br>建议现在导出备份，防止数据丢失。</div>
     <div style="display:flex;flex-direction:column;gap:10px">
-      <button onclick="exportAllData();document.getElementById('storage-warn-modal').remove()" style="background:linear-gradient(135deg,#FF6B9D,#FFB3CC);color:#fff;border:none;border-radius:14px;padding:12px;font-size:14px;font-weight:700;cursor:pointer">📦 立即导出备份</button>
+      <button onclick="exportAllData();document.getElementById('storage-warn-modal').remove()" style="background:var(--pk);color:#fff;border:none;border-radius:14px;padding:12px;font-size:14px;font-weight:700;cursor:pointer">📦 立即导出备份</button>
       <button onclick="document.getElementById('storage-warn-modal').remove()" style="background:#f5f5f5;color:#888;border:none;border-radius:14px;padding:10px;font-size:13px;cursor:pointer">我知道了，暂不备份</button>
     </div>
   </div>`;
@@ -4356,17 +4534,6 @@ function expMemory(target){
 }
 function exportAllData(){dlFile('aichat-export.json',JSON.stringify({exportedAt:new Date().toISOString(),settings:{...S.settings,apiKey:'[HIDDEN]'},chars:S.chars,chats:S.chats,memory:S.memory,together:S.together,moments:S.moments,guestbook:S.guestbook,messageFavorites:S.messageFavorites,myProfile:S.myProfile},null,2));toast('📦 全部数据已导出');}
 
-// ============================================================
-// TOGETHER
-// ============================================================
-function openTogetherModal(){document.getElementById('tog-date').value=S.together.startDate||'';updTogCnt();rendAnns();document.getElementById('together-modal').style.display='flex';}
-function updTogCnt(){const e=document.getElementById('tog-cnt');if(S.together.startDate){const d=Math.floor((Date.now()-new Date(S.together.startDate))/86400000);e.innerHTML=`${d} <span>天</span>`;}else{e.innerHTML='-- <span>天</span>';}}
-function updTogBanner(){const b=document.getElementById('tog-bar');const t=document.getElementById('tog-txt');if(S.together.startDate){const d=Math.floor((Date.now()-new Date(S.together.startDate))/86400000)+1;t.textContent=`我们在一起的第 ${d} 天`;b.classList.add('show');}else b.classList.remove('show');}
-function updTogDayPreview(){const el=document.getElementById('together-days-preview');if(!el)return;if(S.together.startDate){const d=Math.floor((Date.now()-new Date(S.together.startDate))/86400000)+1;el.textContent=`第 ${d} 天`;}else el.textContent='';}
-function addAnn(){const name=document.getElementById('ann-name').value.trim();const date=document.getElementById('ann-date').value;if(!name||!date){toast('请填写名称和日期');return;}if(!S.together.anniversaries)S.together.anniversaries=[];S.together.anniversaries.push({name,date,id:Date.now()});document.getElementById('ann-name').value='';document.getElementById('ann-date').value='';rendAnns();}
-function delAnn(id){S.together.anniversaries=S.together.anniversaries.filter(a=>a.id!==id);rendAnns();}
-function rendAnns(){const el=document.getElementById('ann-list');const list=S.together.anniversaries||[];if(!list.length){el.innerHTML='<div style="color:var(--gl);font-size:13px;text-align:center;padding:10px">还没有纪念日～</div>';return;}el.innerHTML=list.map(a=>{const d=new Date(a.date);const today=new Date();today.setHours(0,0,0,0);const ty=new Date(today.getFullYear(),d.getMonth(),d.getDate());if(ty<today)ty.setFullYear(today.getFullYear()+1);const dl=Math.ceil((ty-today)/86400000);return`<div class="ann-item"><div><div style="font-size:13px;font-weight:700">${esc(a.name)}</div><div style="font-size:12px;color:var(--pk);font-weight:600;margin-top:1px">${a.date} · ${dl===0?'🎉 就是今天！':'还有 '+dl+' 天'}</div></div><button onclick="delAnn(${a.id})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:17px">✕</button></div>`;}).join('');}
-function saveTog(){S.together.startDate=document.getElementById('tog-date').value||null;save();updTogBanner();updTogDayPreview();closeMod('together-modal');toast('💗 纪念日已保存');}
 
 // ============================================================
 // MODALS & TABS
