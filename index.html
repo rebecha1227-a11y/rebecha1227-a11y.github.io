@@ -104,6 +104,12 @@ body.chat-open #tabbar{display:none}
 .nb-entry:active{background:var(--pkp)}
 .nb-entry-date{font-size:11px;color:var(--gray);margin-bottom:6px}
 .nb-entry-body{font-size:14px;color:var(--black);line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.nb-entry-meta{margin-top:8px;font-size:11px;color:var(--gl);display:flex;justify-content:space-between;gap:8px}
+.nb-cmt-list{margin-top:8px;border-top:1px dashed var(--pkb);padding-top:8px}
+.nb-cmt-item{font-size:12px;color:var(--gray);line-height:1.5;margin-bottom:6px}
+.nb-cmt-item:last-child{margin-bottom:0}
+.nb-cmt-who{color:var(--pk);font-weight:700}
+.nb-cmt-btn{margin-top:8px;border:none;background:var(--rose);color:var(--pk);font-size:12px;font-weight:700;border-radius:10px;padding:6px 10px;cursor:pointer}
 #pg-msg .chat-list-wrap{padding:8px 12px}
 .ci{display:flex;align-items:center;gap:11px;padding:11px 14px;background:var(--white);border-radius:16px;margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;box-shadow:0 1px 6px rgba(91,123,106,.07)}
 .ci:active{transform:scale(.98);background:var(--rose)}
@@ -244,6 +250,23 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 #send-btn{width:38px;height:38px;border-radius:50%;background:var(--pk);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;flex-shrink:0;box-shadow:0 3px 10px rgba(91,123,106,.35);transition:all .2s;-webkit-tap-highlight-color:transparent}
 #send-btn:disabled{background:#E8D5DC;box-shadow:none}
 #send-btn:not(:disabled):active{transform:scale(.93)}
+#group-chat-view{position:fixed;inset:0;z-index:3200;display:none;flex-direction:column;background:var(--white)}
+#group-chat-view.open{display:flex}
+#gcv-hdr{padding:calc(10px + var(--st)) 12px 10px;background:rgba(255,245,248,.94);border-bottom:1.5px solid var(--pkb);display:flex;align-items:center;gap:10px}
+#gcv-back{font-size:22px;color:var(--pk);background:none;border:none;cursor:pointer;padding:4px;min-width:44px;min-height:44px}
+#gcv-title{font-size:16px;font-weight:800;color:var(--black);flex:1}
+#gcv-sub{font-size:12px;color:var(--gray);margin-top:2px}
+#gcv-msgs{flex:1;overflow-y:auto;background:var(--bg);padding:10px 10px 6px}
+.gmrow{display:flex;gap:8px;margin-bottom:10px}
+.gmrow.user{justify-content:flex-end}
+.gm-bub{background:var(--white);border:1px solid var(--pkb);border-radius:14px;padding:8px 10px;max-width:80%}
+.gmrow.user .gm-bub{background:var(--pk);color:#fff;border-color:var(--pk)}
+.gm-name{font-size:11px;font-weight:700;color:var(--pk);margin-bottom:4px}
+.gmrow.user .gm-name{color:#fff}
+.gm-txt{font-size:14px;line-height:1.55;white-space:pre-wrap}
+#gcv-inp{padding:8px 10px calc(8px + var(--sb));background:#fff;border-top:1px solid var(--pkb);display:flex;gap:8px;align-items:flex-end}
+#gcv-input{flex:1;border:1.5px solid var(--pkb);border-radius:14px;padding:9px 12px;font-size:15px;font-family:var(--font);outline:none;min-height:42px;max-height:100px;resize:none}
+#gcv-send{width:42px;height:42px;border-radius:50%;border:none;background:var(--pk);color:#fff;cursor:pointer}
 .multi-bar{display:none;align-items:center;gap:8px;margin:0 12px 8px;padding:10px 12px;background:var(--pkp);border:1.5px solid var(--pkb);border-radius:14px}
 .multi-bar.show{display:flex}
 .multi-bar-info{flex:1;min-width:0;font-size:13px;font-weight:700;color:var(--pkd)}
@@ -362,6 +385,8 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 /* ===== MODALS ===== */
 .moverlay{position:fixed;inset:0;background:rgba(45,27,37,.38);backdrop-filter:blur(6px);z-index:1500;display:flex;align-items:flex-end;justify-content:center;animation:fdin .2s ease}
 #msg-action-modal,#msg-edit-modal{z-index:3500}
+#met-at-modal{z-index:3605}
+#relation-modal{z-index:3606}
 @media(min-width:600px){.moverlay{align-items:center}}
 @keyframes fdin{from{opacity:0}to{opacity:1}}
 .modal{background:var(--white);border-radius:24px 24px 0 0;width:100%;max-width:560px;max-height:92dvh;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(91,123,106,.18);animation:mslide .28s cubic-bezier(.34,1.56,.64,1);overflow:hidden;border:1.5px solid var(--pkb);border-bottom:none;padding-bottom:var(--sb)}
@@ -519,7 +544,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
     <div class="pg-hdr">
       <div style="width:0"></div>
       <div class="pg-title" style="text-align:left;font-family:'Snell Roundhand','Apple Chancery','Brush Script MT','Segoe Script',cursive;font-style:normal;font-weight:700;font-size:30px;letter-spacing:.2px">Jinger's Palace</div>
-      <button class="pg-btn" onclick="openNewChatPicker()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+      <button class="pg-btn" onclick="onMsgHeaderAction()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
     </div>
     <div class="scroll">
       <!-- profile card -->
@@ -740,6 +765,22 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
   </div>
 </div>
 
+<!-- ===== GROUP CHAT VIEW ===== -->
+<div id="group-chat-view">
+  <div id="gcv-hdr">
+    <button type="button" id="gcv-back" onclick="closeGroupChat()">‹</button>
+    <div style="flex:1;min-width:0">
+      <div id="gcv-title">剧情群聊</div>
+      <div id="gcv-sub"></div>
+    </div>
+  </div>
+  <div id="gcv-msgs"></div>
+  <div id="gcv-inp">
+    <textarea id="gcv-input" placeholder="发一句话，推动剧情..." oninput="autoResize(this)"></textarea>
+    <button id="gcv-send" onclick="sendGroupMsg()">↑</button>
+  </div>
+</div>
+
 <!-- ===== CHARACTER PROFILE ===== -->
 <div id="char-profile">
   <div class="cp-cover" id="cp-cover">
@@ -774,6 +815,13 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
       <div class="cp-section-title">关于TA</div>
       <div id="cp-persona" style="font-size:14px;color:var(--gray);line-height:1.6"></div>
     </div>
+    <div class="cp-section">
+      <div class="cp-section-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <span>角色关系网</span>
+        <button class="btn btn-s" type="button" style="font-size:12px;padding:4px 10px" onclick="openRelationModal(S._profileCharId)">+ 添加关系</button>
+      </div>
+      <div id="cp-rel-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
   </div>
 </div>
 
@@ -782,10 +830,10 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
   <div class="pg-hdr">
     <button class="pg-btn" onclick="closeNotebook()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div class="pg-title" id="nb-title">日记本</div>
-    <button class="pg-btn" onclick="addNotebookEntry()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+    <button class="pg-btn" onclick="addNotebookEntry()" title="AI 生成今日日记"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
   </div>
   <div class="scroll" id="nb-list" style="padding:12px 14px 24px">
-    <div id="nb-empty" style="text-align:center;padding:60px 20px;color:var(--gl);font-size:14px">还没有日记，点击右上角 + 开始记录</div>
+    <div id="nb-empty" style="text-align:center;padding:60px 20px;color:var(--gl);font-size:14px">还没有日记，点击右上角 + 让 AI 生成今天的日记</div>
   </div>
 </div>
 
@@ -981,6 +1029,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
       </div>
       <div class="fg"><label class="fl">分组</label><select class="fsel" id="ce-group"></select></div>
       <div class="fg"><label class="fl">相识日期</label><input class="fi" type="date" id="ce-metat"></div>
+      <div class="fg"><label class="fl">关系网</label><button class="btn btn-s" type="button" onclick="openRelationEditorFromCharEditor()" style="width:100%">管理这个角色的关系</button></div>
     </div>
     <div class="mfoot"><button class="btn btn-s" onclick="closeMod('chared-modal')">取消</button><button class="btn btn-s" id="clone-char-btn" onclick="cloneCurrentChar()" style="display:none">🗐 克隆</button><button class="btn btn-p" onclick="saveChar()">💾 保存</button></div>
   </div>
@@ -1331,6 +1380,19 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
   </div>
 </div>
 
+<div id="group-create-modal" class="moverlay" style="display:none" onclick="closeMod('group-create-modal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="mhdr"><div class="mtitle">👥 新建剧情群聊</div><button class="mcls" onclick="closeMod('group-create-modal')">✕</button></div>
+    <div class="mbody">
+      <div class="fg"><label class="fl">群聊名称</label><input class="fi" id="gc-name" placeholder="例如：午夜心事局"></div>
+      <div class="fg"><label class="fl">剧情主题</label><input class="fi" id="gc-topic" placeholder="例如：深夜酒吧局"></div>
+      <div class="fg"><label class="fl">剧情基调</label><input class="fi" id="gc-mood" placeholder="例如：暧昧 / 紧张 / 轻松"></div>
+      <div class="fg"><label class="fl">选择成员（2-5人）</label><div id="gc-members" style="display:flex;flex-wrap:wrap;gap:8px"></div></div>
+    </div>
+    <div class="mfoot"><button type="button" class="btn btn-s" onclick="closeMod('group-create-modal')">取消</button><button type="button" class="btn btn-p" onclick="createGroupChat()">创建</button></div>
+  </div>
+</div>
+
 <div id="met-at-modal" class="moverlay" style="display:none" onclick="closeMod('met-at-modal')">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="mhdr"><div class="mtitle">📅 相识日期</div><button class="mcls" onclick="closeMod('met-at-modal')">✕</button></div>
@@ -1338,6 +1400,24 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
       <div class="fg"><label class="fl">从哪一天开始算相识</label><input class="fi" type="date" id="met-at-inp"></div>
     </div>
     <div class="mfoot"><button type="button" class="btn btn-s" onclick="closeMod('met-at-modal')">取消</button><button type="button" class="btn btn-p" onclick="saveMetAtFromModal()">保存</button></div>
+  </div>
+</div>
+
+<div id="relation-modal" class="moverlay" style="display:none" onclick="closeMod('relation-modal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="mhdr"><div class="mtitle">🕸️ 角色关系</div><button class="mcls" onclick="closeMod('relation-modal')">✕</button></div>
+    <div class="mbody">
+      <div class="fg"><label class="fl">目标角色</label><select class="fsel" id="rel-target"></select></div>
+      <div class="fg"><label class="fl">关系类型</label><input class="fi" id="rel-type" placeholder="朋友 / 暧昧 / 恋人 / 对立..."></div>
+      <div class="fg"><label class="fl">亲密度（0-100）</label><input class="fi" type="number" id="rel-intensity" min="0" max="100"></div>
+      <div class="fg"><label class="fl">关系阶段</label><input class="fi" id="rel-stage" placeholder="初识 / 升温 / 稳定 / 紧张"></div>
+      <div class="fg"><label class="fl">备注</label><textarea class="fta" id="rel-notes" rows="3" placeholder="例如：因为某次争执在冷战中..."></textarea></div>
+    </div>
+    <div class="mfoot">
+      <button type="button" class="btn btn-d" onclick="deleteRelationFromModal()">删除关系</button>
+      <button type="button" class="btn btn-s" onclick="closeMod('relation-modal')">取消</button>
+      <button type="button" class="btn btn-p" onclick="saveRelationFromModal()">保存</button>
+    </div>
   </div>
 </div>
 
@@ -1418,12 +1498,15 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 let S = {
   chats:{},   // { charId: {messages,systemPrompt,useMem,autoSum,sumTrig,sumStyle,chatMem,lastSumAt,bubbleStyle,customCSS,chatBg,typingTxt,pokeTxt,showUserAvatar,showAssistantAvatar,showStatus,statusText,allowMultiMsg,autoMsgEnabled,autoMsgEvery,autoMsgUnit,timelineMode,virtualTimeLabel,realTimeResumeMode} }
   chars:{},   // { id: {id,name,remark,sig,emoji,avatarImg,coverImg,nickname,persona,personalities,style,group,createdAt} }
+  relations:[], // [{id,a,b,type,intensity,stage,notes,updatedAt}]
+  groupChats:[], // [{id,name,memberIds,topic,mood,messages,lastStoryBeat,settings,createdAt,updatedAt}]
   currentChatId:null,  // = charId
   settings:{apiKey:'',apiBase:'https://api.deepseek.com/v1',model:'deepseek-reasoner',modelOptions:['deepseek-reasoner','deepseek-chat'],globalSP:'',temperature:1,maxTokens:4096,fontSize:16,bubFrom:'#5B7B6A',bubTo:'#5B7B6A',wallpaper:'default',customWP:null,globalBubble:'default',contactExtraGroups:[],bubblePresets:[]},
   memory:'',
   together:{startDate:null,anniversaries:[]},
   moments:[],     // [{id,author,authorId,text,photos,loc,at,perm,ts,likes,comments}]
   guestbook:[],   // [{id,charId,text,ts,reply}]
+  notebooks:{},   // { charId: [{id,ts,body,authorType,comments:[{id,who,text,ts}]}] }
   messageFavorites:[], // [{id,chatId,messageId,role,content,timestamp,charName}]
   myProfile:{name:'我',emoji:'😊',avatarImg:null,sig:''},
   drafts:{},
@@ -1596,6 +1679,61 @@ function normalizeMessage(msg,i){
 function normalizeAllData(){
   S.messageFavorites=Array.isArray(S.messageFavorites)?S.messageFavorites:[];
   Object.keys(S.chats||{}).forEach(cid=>ensureChatDefaults(S.chats[cid]));
+  if(!S.notebooks||typeof S.notebooks!=='object')S.notebooks={};
+  Object.keys(S.notebooks).forEach(cid=>ensureNotebookDefaults(cid));
+  normalizeRelations();
+  normalizeGroupChats();
+}
+function normalizeRelations(){
+  const rels=Array.isArray(S.relations)?S.relations:[];
+  const pairMap=new Map();
+  const out=[];
+  rels.forEach((r,idx)=>{
+    if(!r)return;
+    const a=String(r.a||'').trim();
+    const b=String(r.b||'').trim();
+    if(!a||!b||a===b)return;
+    if(!S.chars[a]||!S.chars[b])return;
+    const key=[a,b].sort().join('__');
+    const norm={
+      id:r.id||`rel_${key}_${idx}`,
+      a:[a,b].sort()[0],
+      b:[a,b].sort()[1],
+      type:String(r.type||'朋友').trim()||'朋友',
+      intensity:Math.max(0,Math.min(100,parseInt(r.intensity,10)||50)),
+      stage:String(r.stage||'稳定').trim()||'稳定',
+      notes:String(r.notes||'').trim(),
+      updatedAt:r.updatedAt||Date.now()
+    };
+    pairMap.set(key,norm);
+  });
+  pairMap.forEach(v=>out.push(v));
+  S.relations=out;
+}
+function normalizeGroupChats(){
+  const list=Array.isArray(S.groupChats)?S.groupChats:[];
+  S.groupChats=list.map((g,idx)=>{
+    const mids=Array.isArray(g.memberIds)?g.memberIds.filter(id=>S.chars[id]):[];
+    const members=[...new Set(mids)];
+    return{
+      id:g.id||`grp_${Date.now()}_${idx}`,
+      name:String(g.name||'剧情群聊').trim()||'剧情群聊',
+      memberIds:members,
+      topic:String(g.topic||'日常闲聊').trim()||'日常闲聊',
+      mood:String(g.mood||'轻松').trim()||'轻松',
+      messages:Array.isArray(g.messages)?g.messages.map((m,i)=>({
+        id:m.id||`gmsg_${Date.now()}_${i}`,
+        role:m.role==='user'?'user':'assistant',
+        charId:m.role==='assistant'&&m.charId&&S.chars[m.charId]?m.charId:null,
+        content:String(m.content||''),
+        timestamp:typeof m.timestamp==='number'?m.timestamp:Date.now()+i
+      })).filter(m=>m.content):[],
+      lastStoryBeat:String(g.lastStoryBeat||'').trim(),
+      settings:{autoTurn:true,maxAiTurns:2,...(g.settings||{})},
+      createdAt:g.createdAt||Date.now(),
+      updatedAt:g.updatedAt||Date.now()
+    };
+  }).filter(g=>g.memberIds.length>=2);
 }
 function getMessageById(chatId,msgId){
   return (S.chats[chatId]?.messages||[]).find(m=>m.id===msgId)||null;
@@ -1760,11 +1898,14 @@ async function load(){
       const p=typeof r==='string'?JSON.parse(r):r;
       S.chats=p.chats||{};
       S.chars=p.chars||{};
+      S.relations=Array.isArray(p.relations)?p.relations:[];
+      S.groupChats=Array.isArray(p.groupChats)?p.groupChats:[];
       S.settings={...S.settings,...(p.settings||{})};
       S.memory=p.memory||'';
       S.together={...S.together,...(p.together||{})};
       S.moments=p.moments||[];
       S.guestbook=p.guestbook||[];
+      S.notebooks=p.notebooks||{};
       S.messageFavorites=p.messageFavorites||[];
       S.myProfile={...S.myProfile,...(p.myProfile||{})};
       S.drafts=p.drafts||{};
@@ -1782,11 +1923,14 @@ async function load(){
     const p=JSON.parse(legacy);
     S.chats=p.chats||{};
     S.chars=p.chars||{};
+    S.relations=Array.isArray(p.relations)?p.relations:[];
+    S.groupChats=Array.isArray(p.groupChats)?p.groupChats:[];
     S.settings={...S.settings,...(p.settings||{})};
     S.memory=p.memory||'';
     S.together={...S.together,...(p.together||{})};
     S.moments=p.moments||[];
     S.guestbook=p.guestbook||[];
+    S.notebooks=p.notebooks||{};
     S.messageFavorites=p.messageFavorites||[];
     S.myProfile={...S.myProfile,...(p.myProfile||{})};
     S.drafts=p.drafts||{};
@@ -1796,7 +1940,7 @@ async function load(){
     console.error(e);
   }
 }
-function _payload(){return JSON.stringify({chats:S.chats,chars:S.chars,settings:S.settings,memory:S.memory,together:S.together,moments:S.moments,guestbook:S.guestbook,messageFavorites:S.messageFavorites,myProfile:S.myProfile,drafts:S.drafts});}
+function _payload(){return JSON.stringify({chats:S.chats,chars:S.chars,relations:S.relations,groupChats:S.groupChats,settings:S.settings,memory:S.memory,together:S.together,moments:S.moments,guestbook:S.guestbook,notebooks:S.notebooks,messageFavorites:S.messageFavorites,myProfile:S.myProfile,drafts:S.drafts});}
 function saveTryRaw(){
   const payload=_payload();
   _idbPendingPayload=payload;
@@ -1861,17 +2005,20 @@ function save(){
 // SUPABASE 云端同步
 // ============================================================
 function getPayloadData(){
-  return{chats:S.chats,chars:S.chars,settings:S.settings,memory:S.memory,together:S.together,moments:S.moments,guestbook:S.guestbook,messageFavorites:S.messageFavorites,myProfile:S.myProfile};
+  return{chats:S.chats,chars:S.chars,relations:S.relations,groupChats:S.groupChats,settings:S.settings,memory:S.memory,together:S.together,moments:S.moments,guestbook:S.guestbook,notebooks:S.notebooks,messageFavorites:S.messageFavorites,myProfile:S.myProfile};
 }
 function applyPayloadFromObject(p){
   if(!p||typeof p!=='object')return;
   S.chats=p.chats||{};
   S.chars=p.chars||{};
+  S.relations=Array.isArray(p.relations)?p.relations:[];
+  S.groupChats=Array.isArray(p.groupChats)?p.groupChats:[];
   S.settings={...S.settings,...(p.settings||{})};
   S.memory=p.memory||'';
   S.together={...S.together,...(p.together||{})};
   S.moments=p.moments||[];
   S.guestbook=p.guestbook||[];
+  S.notebooks=p.notebooks||{};
   S.messageFavorites=p.messageFavorites||[];
   S.myProfile={...S.myProfile,...(p.myProfile||{})};
   normalizeAllData();
@@ -2095,7 +2242,7 @@ function renderChatList(){
   const hint=document.getElementById('no-chats-hint');
   const q=(document.getElementById('msg-search-inp')?.value||'').trim().toLowerCase();
   let allChatIds=Object.keys(S.chats).filter(cid=>!S.chats[cid].hidden);
-  if(typeof _msgTab!=='undefined'&&_msgTab==='groups'){wrap.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--gl);font-size:14px">群聊功能即将上线</div>';return;}
+  if(typeof _msgTab!=='undefined'&&_msgTab==='groups'){renderGroupChatList(q);return;}
   if(typeof _msgTab!=='undefined'&&_msgTab==='unread'){allChatIds=allChatIds.filter(cid=>(S.chats[cid]?.unread||0)>0);}
   if(q){allChatIds=allChatIds.filter(cid=>{const c=S.chars[cid];if(!c)return false;return(c.remark||c.name||'').toLowerCase().includes(q);});}
   if(!allChatIds.length){hint&&(hint.style.display='');return;}
@@ -2134,6 +2281,167 @@ function renderChatList(){
     wrap.appendChild(div);
   });
   updateMsgTabBadge();
+}
+let _currentGroupChatId=null,_groupGenerating=false;
+function onMsgHeaderAction(){
+  if(_msgTab==='groups'){openGroupCreateModal();return;}
+  openNewChatPicker();
+}
+function openGroupCreateModal(){
+  const members=document.getElementById('gc-members');
+  const chars=Object.values(S.chars);
+  members.innerHTML=chars.length?chars.map(c=>`<label style="display:flex;align-items:center;gap:6px;background:var(--rose);padding:6px 9px;border-radius:10px"><input type="checkbox" value="${c.id}"><span style="font-size:12px">${esc(c.remark||c.name)}</span></label>`).join(''):'<div style="font-size:12px;color:var(--gl)">暂无角色</div>';
+  document.getElementById('gc-name').value='';
+  document.getElementById('gc-topic').value='日常闲聊';
+  document.getElementById('gc-mood').value='轻松';
+  document.getElementById('group-create-modal').style.display='flex';
+}
+function createGroupChat(){
+  const name=(document.getElementById('gc-name').value||'').trim()||'剧情群聊';
+  const topic=(document.getElementById('gc-topic').value||'').trim()||'日常闲聊';
+  const mood=(document.getElementById('gc-mood').value||'').trim()||'轻松';
+  const ids=[...document.querySelectorAll('#gc-members input[type="checkbox"]:checked')].map(el=>el.value);
+  const memberIds=[...new Set(ids)].filter(id=>S.chars[id]);
+  if(memberIds.length<2||memberIds.length>5){toast('请选择 2-5 位成员');return;}
+  const g={id:`grp_${Date.now()}`,name,memberIds,topic,mood,messages:[],lastStoryBeat:'',settings:{autoTurn:true,maxAiTurns:2},createdAt:Date.now(),updatedAt:Date.now()};
+  S.groupChats=S.groupChats||[];
+  S.groupChats.unshift(g);
+  normalizeGroupChats();
+  save();
+  closeMod('group-create-modal');
+  renderGroupChatList((document.getElementById('msg-search-inp')?.value||'').trim().toLowerCase());
+  openGroupChat(g.id);
+}
+function renderGroupChatList(q=''){
+  const wrap=document.getElementById('chat-list-wrap');
+  const hint=document.getElementById('no-chats-hint');
+  const list=(S.groupChats||[]).filter(g=>{
+    if(!q)return true;
+    return (g.name||'').toLowerCase().includes(q)||(g.topic||'').toLowerCase().includes(q);
+  });
+  if(!list.length){
+    hint&&(hint.style.display='none');
+    wrap.innerHTML='<div style="height:8px"></div><div style="text-align:center;padding:26px 20px;color:var(--gl);font-size:14px">还没有剧情群聊，点右上角创建</div>';
+    return;
+  }
+  hint&&(hint.style.display='none');
+  wrap.innerHTML='<div style="height:8px"></div>';
+  list.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)).forEach(g=>{
+    const last=g.messages?.at(-1);
+    const preview=last?`${last.role==='user'?'我：':((S.chars[last.charId]?.remark||S.chars[last.charId]?.name||'成员')+'：')}${(last.content||'').slice(0,22)}`:'点击进入开始剧情互动';
+    const ts=last?fmtShort(new Date(last.timestamp||Date.now())):'';
+    const avatars=g.memberIds.slice(0,3).map(id=>S.chars[id]).filter(Boolean).map(c=>c.avatarImg?`<img src="${c.avatarImg}" alt="">`:(c.emoji||'🤖')).map(v=>`<span style="width:22px;height:22px;border-radius:50%;overflow:hidden;background:var(--pk);display:flex;align-items:center;justify-content:center;font-size:12px;border:1px solid var(--pkb)">${v}</span>`).join('');
+    const div=document.createElement('div');
+    div.className='ci';
+    div.onclick=()=>openGroupChat(g.id);
+    div.innerHTML=`<div class="ci-av" style="font-size:16px">👥</div><div class="ci-info"><div class="ci-name">${esc(g.name)}<span style="font-size:11px;color:var(--gl);font-weight:600;margin-left:6px">${esc(g.mood||'')}</span></div><div class="ci-prev">${esc(preview)}</div></div><div class="ci-meta"><div class="ci-time">${ts}</div><div style="display:flex;gap:2px">${avatars}</div></div>`;
+    wrap.appendChild(div);
+  });
+}
+function openGroupChat(groupId){
+  const g=(S.groupChats||[]).find(x=>x.id===groupId);
+  if(!g)return;
+  _currentGroupChatId=groupId;
+  document.getElementById('gcv-title').textContent=g.name||'剧情群聊';
+  document.getElementById('gcv-sub').textContent=`主题：${g.topic||'日常闲聊'} · 基调：${g.mood||'轻松'}`;
+  renderGroupChatMessages();
+  document.body.classList.add('chat-open');
+  document.getElementById('group-chat-view').classList.add('open');
+}
+function closeGroupChat(){
+  _currentGroupChatId=null;
+  document.body.classList.remove('chat-open');
+  document.getElementById('group-chat-view').classList.remove('open');
+  renderChatList();
+}
+function renderGroupChatMessages(){
+  const wrap=document.getElementById('gcv-msgs');
+  if(!wrap)return;
+  const g=(S.groupChats||[]).find(x=>x.id===_currentGroupChatId);
+  if(!g){wrap.innerHTML='';return;}
+  const msgs=g.messages||[];
+  if(!msgs.length){wrap.innerHTML='<div style="text-align:center;padding:30px 12px;color:var(--gl);font-size:13px">发第一句话，角色会按关系接话</div>';return;}
+  wrap.innerHTML=msgs.map(m=>{
+    const isUser=m.role==='user';
+    const nm=isUser?(S.myProfile.name||'我'):(S.chars[m.charId]?.remark||S.chars[m.charId]?.name||'成员');
+    return `<div class="gmrow ${isUser?'user':''}"><div class="gm-bub"><div class="gm-name">${esc(nm)}</div><div class="gm-txt">${esc(m.content||'')}</div></div></div>`;
+  }).join('');
+  wrap.scrollTop=wrap.scrollHeight;
+}
+function getRelationScore(a,b){
+  const rel=getRelationBetween(a,b);
+  if(!rel)return 30;
+  let score=rel.intensity||50;
+  if((rel.type||'').includes('对立'))score-=15;
+  if((rel.type||'').includes('恋')||(rel.type||'').includes('暧昧'))score+=10;
+  return Math.max(1,score);
+}
+function pickStorySpeakers(group){
+  const members=group.memberIds||[];
+  if(members.length<=2)return members.slice(0,2);
+  const lastChar=[...(group.messages||[])].reverse().find(m=>m.role==='assistant'&&m.charId)?.charId||members[0];
+  const scored=members.map(id=>{
+    let s=Math.random()*15;
+    s+=getRelationScore(id,lastChar);
+    return{id,score:s};
+  }).sort((a,b)=>b.score-a.score);
+  return scored.slice(0,Math.max(1,Math.min(group.settings?.maxAiTurns||2,2))).map(x=>x.id);
+}
+function buildGroupPrompt(group,speakerId,userText=''){
+  const speaker=S.chars[speakerId]||{};
+  const members=(group.memberIds||[]).map(id=>S.chars[id]).filter(Boolean);
+  const relLines=[];
+  members.forEach(a=>{
+    members.forEach(b=>{
+      if(a.id>=b.id)return;
+      const rel=getRelationBetween(a.id,b.id);
+      if(rel)relLines.push(`${a.remark||a.name} 与 ${b.remark||b.name}：${rel.type}（亲密度${rel.intensity}，阶段${rel.stage}）`);
+    });
+  });
+  const recent=(group.messages||[]).slice(-10).map(m=>{
+    const who=m.role==='user'?(S.myProfile.name||'我'):(S.chars[m.charId]?.remark||S.chars[m.charId]?.name||'成员');
+    return `${who}：${m.content}`;
+  }).join('\n')||'（暂无）';
+  return `你在一个多人剧情群聊里发言。\n你当前扮演：${speaker.remark||speaker.name||'角色'}。\n你的性格：${(speaker.personalities||[]).join('、')||'自然'}。\n群主题：${group.topic||'日常闲聊'}；群基调：${group.mood||'轻松'}。\n角色关系：\n${relLines.join('\n')||'暂无明确关系'}\n最近对话：\n${recent}\n用户刚刚说：${userText||'（无）'}\n请只输出你这一个角色在群里的下一句回复（20-60字），要自然、口语化、符合关系。`;
+}
+async function generateStoryTurn(groupId,userText=''){
+  const group=(S.groupChats||[]).find(x=>x.id===groupId);
+  if(!group||_groupGenerating)return;
+  if(!S.settings.apiKey){toast('请先填写 API Key 才能生成剧情群聊');return;}
+  _groupGenerating=true;
+  const speakers=pickStorySpeakers(group);
+  for(const speakerId of speakers){
+    const prompt=buildGroupPrompt(group,speakerId,userText);
+    try{
+      const chat=S.chats[speakerId]||{messages:[]};
+      const res=await callChatAPI(speakerId,chat,prompt,'group_story');
+      const txt=String(res||'').trim();
+      if(!txt)continue;
+      group.messages.push({id:`gmsg_${Date.now()}_${speakerId}`,role:'assistant',charId:speakerId,content:txt,timestamp:Date.now()});
+      group.lastStoryBeat=txt.slice(0,50);
+      group.updatedAt=Date.now();
+      renderGroupChatMessages();
+    }catch(e){
+      toast('群聊生成失败：'+(e.message||'unknown'));
+    }
+  }
+  _groupGenerating=false;
+  save();
+  renderChatList();
+}
+async function sendGroupMsg(){
+  const inp=document.getElementById('gcv-input');
+  const text=(inp.value||'').trim();
+  if(!text||!_currentGroupChatId)return;
+  const group=(S.groupChats||[]).find(x=>x.id===_currentGroupChatId);
+  if(!group)return;
+  group.messages.push({id:`gmsg_u_${Date.now()}`,role:'user',charId:null,content:text,timestamp:Date.now()});
+  group.updatedAt=Date.now();
+  inp.value='';
+  autoResize(inp);
+  renderGroupChatMessages();
+  save();
+  await generateStoryTurn(_currentGroupChatId,text);
 }
 
 // ============================================================
@@ -3021,9 +3329,96 @@ function openCharProfile(charId){
   document.getElementById('cp-tags').innerHTML=(char.personalities||[]).map(t=>`<span class="cp-tag">${t}</span>`).join('');
   document.getElementById('cp-persona').textContent=char.persona||'暂无介绍';
   document.getElementById('cp-persona-section').style.display=char.persona?'block':'none';
+  renderProfileRelations(charId);
   document.getElementById('char-profile').classList.add('open');
 }
 function closeCharProfile(){document.getElementById('char-profile').classList.remove('open');S._profileCharId=null;}
+let _relSourceCharId=null,_relTargetCharId=null;
+function relationPairKey(a,b){return [a,b].sort().join('__');}
+function getRelationBetween(a,b){
+  if(!a||!b)return null;
+  const k=relationPairKey(a,b);
+  return (S.relations||[]).find(r=>relationPairKey(r.a,r.b)===k)||null;
+}
+function getRelationsForChar(charId){
+  return (S.relations||[]).filter(r=>r.a===charId||r.b===charId);
+}
+function renderProfileRelations(charId){
+  const wrap=document.getElementById('cp-rel-list');
+  if(!wrap)return;
+  const list=getRelationsForChar(charId);
+  if(!list.length){
+    wrap.innerHTML='<div style="color:var(--gl);font-size:12px">还没有关系，点右上角“+ 添加关系”开始。</div>';
+    return;
+  }
+  wrap.innerHTML=list.map(r=>{
+    const otherId=r.a===charId?r.b:r.a;
+    const other=S.chars[otherId];
+    if(!other)return '';
+    const nm=other.remark||other.name||'未知角色';
+    return `<button type="button" class="btn btn-s" style="width:100%;text-align:left;font-size:12px;display:flex;justify-content:space-between;gap:8px" onclick="openRelationModal('${charId}','${otherId}')"><span>${esc(nm)} · ${esc(r.type||'朋友')}（${r.intensity||50}）</span><span style="color:var(--gl)">${esc(r.stage||'稳定')}</span></button>`;
+  }).join('');
+}
+function openRelationEditorFromCharEditor(){
+  const src=document.getElementById('editing-char-id').value||'';
+  if(!src){toast('请先保存角色');return;}
+  closeMod('chared-modal');
+  openCharProfile(src);
+  openRelationModal(src);
+}
+function openRelationModal(sourceCharId,targetCharId=''){
+  if(!sourceCharId||!S.chars[sourceCharId])return;
+  _relSourceCharId=sourceCharId;
+  _relTargetCharId=targetCharId||'';
+  const sel=document.getElementById('rel-target');
+  const opts=Object.values(S.chars).filter(c=>c.id!==sourceCharId);
+  sel.innerHTML=opts.length?opts.map(c=>`<option value="${c.id}">${esc(c.remark||c.name||c.id)}</option>`).join(''):'<option value="">暂无可选角色</option>';
+  if(_relTargetCharId&&opts.find(c=>c.id===_relTargetCharId))sel.value=_relTargetCharId;
+  else _relTargetCharId=sel.value||'';
+  const rel=getRelationBetween(sourceCharId,_relTargetCharId);
+  document.getElementById('rel-type').value=rel?.type||'朋友';
+  document.getElementById('rel-intensity').value=rel?.intensity??50;
+  document.getElementById('rel-stage').value=rel?.stage||'稳定';
+  document.getElementById('rel-notes').value=rel?.notes||'';
+  document.getElementById('relation-modal').style.display='flex';
+  sel.onchange=()=>{
+    _relTargetCharId=sel.value||'';
+    const cur=getRelationBetween(_relSourceCharId,_relTargetCharId);
+    document.getElementById('rel-type').value=cur?.type||'朋友';
+    document.getElementById('rel-intensity').value=cur?.intensity??50;
+    document.getElementById('rel-stage').value=cur?.stage||'稳定';
+    document.getElementById('rel-notes').value=cur?.notes||'';
+  };
+}
+function saveRelationFromModal(){
+  const a=_relSourceCharId,b=(document.getElementById('rel-target').value||'').trim();
+  if(!a||!b||a===b){toast('请选择不同的目标角色');return;}
+  if(!S.chars[a]||!S.chars[b]){toast('角色不存在');return;}
+  const type=(document.getElementById('rel-type').value||'朋友').trim()||'朋友';
+  const intensity=Math.max(0,Math.min(100,parseInt(document.getElementById('rel-intensity').value,10)||50));
+  const stage=(document.getElementById('rel-stage').value||'稳定').trim()||'稳定';
+  const notes=(document.getElementById('rel-notes').value||'').trim();
+  const key=relationPairKey(a,b);
+  S.relations=(S.relations||[]).filter(r=>relationPairKey(r.a,r.b)!==key);
+  S.relations.push({id:`rel_${key}`,a:[a,b].sort()[0],b:[a,b].sort()[1],type,intensity,stage,notes,updatedAt:Date.now()});
+  normalizeRelations();
+  save();
+  closeMod('relation-modal');
+  if(document.getElementById('char-profile').classList.contains('open')&&S._profileCharId)renderProfileRelations(S._profileCharId);
+  toast('✅ 关系已保存');
+}
+function deleteRelationFromModal(){
+  const a=_relSourceCharId,b=(document.getElementById('rel-target').value||'').trim();
+  if(!a||!b)return;
+  const key=relationPairKey(a,b);
+  const before=(S.relations||[]).length;
+  S.relations=(S.relations||[]).filter(r=>relationPairKey(r.a,r.b)!==key);
+  if((S.relations||[]).length===before){toast('没有可删除的关系');return;}
+  save();
+  closeMod('relation-modal');
+  if(document.getElementById('char-profile').classList.contains('open')&&S._profileCharId)renderProfileRelations(S._profileCharId);
+  toast('🗑️ 关系已删除');
+}
 function openMetAtModal(){
   if(!S._profileCharId){toast('请先打开联系人资料');return;}
   const char=S.chars[S._profileCharId];
@@ -3752,10 +4147,48 @@ async function postComment(){
   }
 }
 
+function getRelationContextText(a,b){
+  const rel=getRelationBetween(a,b);
+  if(!rel)return '暂无明确关系';
+  return `${rel.type}（亲密度${rel.intensity}，阶段${rel.stage}${rel.notes?`，备注：${rel.notes}`:''}）`;
+}
+function guessMomentGroupContext(authorId){
+  if(!authorId)return null;
+  const list=(S.groupChats||[]).filter(g=>(g.memberIds||[]).includes(authorId));
+  if(!list.length)return null;
+  list.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  const top=list[0];
+  return{groupContextId:top.id,groupStoryBeat:top.lastStoryBeat||''};
+}
+function inferMomentInvolvedCharIds(authorId){
+  if(!authorId)return [];
+  const rels=getRelationsForChar(authorId);
+  return rels.sort((a,b)=>(b.intensity||0)-(a.intensity||0)).slice(0,3).map(r=>r.a===authorId?r.b:r.a).filter(id=>S.chars[id]);
+}
+function getMomentRelationWeight(m,charId){
+  let score=10+Math.random()*8;
+  if(m.authorId&&m.authorId!==charId){
+    const rel=getRelationBetween(charId,m.authorId);
+    if(rel){
+      score+=(rel.intensity||50)/2;
+      if((rel.type||'').includes('恋')||(rel.type||'').includes('暧昧'))score+=8;
+      if((rel.type||'').includes('对立'))score+=6;
+    }
+  }
+  if(Array.isArray(m.involvedCharIds)&&m.involvedCharIds.includes(charId))score+=14;
+  if(m.groupContextId){
+    const g=(S.groupChats||[]).find(x=>x.id===m.groupContextId);
+    if(g&&(g.memberIds||[]).includes(charId))score+=10;
+  }
+  if(m.atCharId===charId)score+=25;
+  return score;
+}
+
 async function momentAuthorReplyToUser(m,char,userText,parentCommentId){
   if(!S.settings.apiKey)return;
   try{
-    const prompt=`你是${char.name}，性格：${char.personalities?.join('、')||'温柔'}。你的朋友圈动态：「${m.text}」。${S.myProfile.name||'用户'}评论：「${userText}」。请用人设写一条简短回复（40字内），只输出正文：`;
+    const relTxt=m.authorId?getRelationContextText(char.id,m.authorId):'';
+    const prompt=`你是${char.name}，性格：${char.personalities?.join('、')||'温柔'}。你的朋友圈动态：「${m.text}」。${S.myProfile.name||'用户'}评论：「${userText}」。你与评论者关系：${relTxt||'暂无'}。请用人设写一条简短回复（40字内），只输出正文：`;
     const txt=await callAPIRaw(prompt);
     ensureMomentCommentIds(m);
     m.comments.push({id:'cid'+Date.now(),who:char.remark||char.name,text:txt,ts:Date.now(),parentId:parentCommentId||null,charId:char.id});
@@ -3772,7 +4205,9 @@ async function aiCommentMoment(){
   const charId=document.getElementById('comment-ai-char').value;
   const char=S.chars[charId];if(!char){toast('请选择朋友');return;}
   const authLabel=m.authorId?(S.chars[m.authorId]?.remark||S.chars[m.authorId]?.name||'朋友'):(S.myProfile.name||'用户');
-  const prompt=`你扮演${char.name}，性格：${char.personalities?.join('、')||'温柔'}。朋友圈动态（作者 ${authLabel}）：「${m.text}」${m.loc?' 定位：'+m.loc:''}。请用人设写一条评论区发言（28字内），只输出正文：`;
+  const relTxt=m.authorId?getRelationContextText(char.id,m.authorId):'';
+  const beat=m.groupStoryBeat?`该动态源于群聊剧情片段：${m.groupStoryBeat}。`:'';
+  const prompt=`你扮演${char.name}，性格：${char.personalities?.join('、')||'温柔'}。朋友圈动态（作者 ${authLabel}）：「${m.text}」${m.loc?' 定位：'+m.loc:''}。你与作者关系：${relTxt||'暂无'}。${beat}请用人设写一条评论区发言（28字内），只输出正文：`;
   toast('🤖 '+char.name+' 正在评论…');
   try{
     const res=await callAPIRaw(prompt);
@@ -3925,13 +4360,19 @@ async function runFriendsReactToNewMoment(m){
   const skip=new Set();
   if(m.authorId)skip.add(m.authorId);
   if(m.atCharId)skip.add(m.atCharId);
-  const others=Object.values(S.chars).filter(c=>!skip.has(c.id));
+  const others=Object.values(S.chars).filter(c=>!skip.has(c.id))
+    .map(c=>({char:c,w:getMomentRelationWeight(m,c.id)}))
+    .sort((a,b)=>b.w-a.w)
+    .slice(0,5)
+    .map(x=>x.char);
   if(!others.length)return;
   toast('朋友们正在陆续评论…');
   for(const char of others){
     try{
       const authLabel=m.authorId?(S.chars[m.authorId]?.remark||S.chars[m.authorId]?.name||'朋友'):(S.myProfile.name||'用户');
-      const prompt=`你在刷朋友圈。${authLabel} 发了一条动态：「${m.text}」。你是${char.name}，性格：${char.personalities?.join('、')||'温柔'}。用符合人设的一条短评论（30字内），不要重复别人语气，只输出正文：`;
+      const relTxt=m.authorId?getRelationContextText(char.id,m.authorId):'';
+      const beat=m.groupStoryBeat?`这条动态来源于群聊事件：${m.groupStoryBeat}。`:'';
+      const prompt=`你在刷朋友圈。${authLabel} 发了一条动态：「${m.text}」。你是${char.name}，性格：${char.personalities?.join('、')||'温柔'}。你与作者关系：${relTxt||'暂无'}。${beat}请写一条符合人设的短评论（30字内），不要重复别人语气，只输出正文：`;
       const txt=await callAPIRaw(prompt);
       if(!m.comments)m.comments=[];
       ensureMomentCommentIds(m);
@@ -3946,7 +4387,8 @@ async function notifyAtFriendForMoment(charId,m){
   const char=S.chars[charId];if(!char||!S.settings.apiKey)return;
   ensureChatForChar(charId);
   try{
-    const prompt=`${S.myProfile.name||'用户'} 发朋友圈提到了你，动态：「${m.text}」。你是${char.name}，性格：${char.personalities?.join('、')||'温柔'}。请写你会留在这条动态下的评论（30字内），只输出正文：`;
+    const relTxt=m.authorId?getRelationContextText(char.id,m.authorId):'';
+    const prompt=`${S.myProfile.name||'用户'} 发朋友圈提到了你，动态：「${m.text}」。你是${char.name}，性格：${char.personalities?.join('、')||'温柔'}。你与作者关系：${relTxt||'暂无'}。请写你会留在这条动态下的评论（30字内），只输出正文：`;
     const cmt=await callAPIRaw(prompt);
     if(!m.comments)m.comments=[];
     ensureMomentCommentIds(m);
@@ -3962,6 +4404,8 @@ function postMoment(){
   const aiAuthorId=document.getElementById('compose-modal').dataset.aiAuthorId;
   const atChar=document.getElementById('compose-at-char').value;
   const atName=atChar?(S.chars[atChar]?.remark||S.chars[atChar]?.name):'';
+  const groupCtx=guessMomentGroupContext(aiAuthorId||null);
+  const involved=inferMomentInvolvedCharIds(aiAuthorId||null);
   const m={
     id:'m'+Date.now(),
     author:aiAuthorId?(S.chars[aiAuthorId]?.remark||S.chars[aiAuthorId]?.name):(S.myProfile.name||'我'),
@@ -3971,6 +4415,9 @@ function postMoment(){
     loc:document.getElementById('compose-loc').value.trim(),
     at:atName,
     atCharId:atChar||null,
+    groupContextId:groupCtx?.groupContextId||null,
+    groupStoryBeat:groupCtx?.groupStoryBeat||'',
+    involvedCharIds:involved,
     perm:document.getElementById('compose-perm').value,
     ts:Date.now(),likes:0,likedByMe:false,comments:[]
   };
@@ -4226,8 +4673,25 @@ function editStatNum(key){
 // NOTEBOOK
 // ============================================================
 let _nbCharId=null;let _nbEditIdx=null;
+function ensureNotebookDefaults(charId){
+  if(!S.notebooks)S.notebooks={};
+  if(!S.notebooks[charId])S.notebooks[charId]=[];
+  S.notebooks[charId]=S.notebooks[charId].map((e,idx)=>({
+    id:e.id||`nb_${charId}_${e.ts||Date.now()}_${idx}`,
+    ts:e.ts||Date.now(),
+    body:e.body||'',
+    authorType:e.authorType||'user',
+    comments:Array.isArray(e.comments)?e.comments.map((c,i)=>({
+      id:c.id||`nbc_${Date.now()}_${i}`,
+      who:c.who||'我',
+      text:c.text||'',
+      ts:c.ts||Date.now()
+    })).filter(c=>c.text):[]
+  }));
+}
 function openNotebook(charId){
   _nbCharId=charId;
+  ensureNotebookDefaults(charId);
   const char=S.chars[charId];
   const title=document.getElementById('nb-title');
   if(title)title.textContent=(char?.remark||char?.name||'TA')+'的日记本';
@@ -4235,9 +4699,25 @@ function openNotebook(charId){
   document.getElementById('pg-notebook').style.display='flex';
 }
 function closeNotebook(){document.getElementById('pg-notebook').style.display='none';_nbCharId=null;}
+function getTodayChatSummary(charId){
+  const list=S.chats[charId]?.messages||[];
+  const now=new Date();
+  const y=now.getFullYear(),m=now.getMonth(),d=now.getDate();
+  const today=list.filter(msg=>{
+    const ts=msg.timestamp||0;
+    const t=new Date(ts);
+    return t.getFullYear()===y&&t.getMonth()===m&&t.getDate()===d&&!msg.recalled;
+  }).slice(-36);
+  if(!today.length)return '今天还没有和用户发生有效对话。';
+  return today.map(msg=>{
+    const role=msg.role==='user'?(S.myProfile.name||'用户'):(S.chars[charId]?.remark||S.chars[charId]?.name||'TA');
+    return `${role}：${getMessagePlainText(msg,charId).slice(0,120)}`;
+  }).join('\n');
+}
 function renderNotebook(){
   const list=document.getElementById('nb-list');const empty=document.getElementById('nb-empty');
   if(!list)return;
+  ensureNotebookDefaults(_nbCharId);
   const entries=(S.notebooks||{})[_nbCharId]||[];
   if(!entries.length){empty&&(empty.style.display='');list.innerHTML='';list.appendChild(empty);return;}
   empty&&(empty.style.display='none');list.innerHTML='';
@@ -4245,14 +4725,65 @@ function renderNotebook(){
     const idx=entries.length-1-ri;
     const d=new Date(e.ts);
     const dateStr=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+    const comments=Array.isArray(e.comments)?e.comments:[];
+    const commentsHtml=comments.length
+      ?`<div class="nb-cmt-list">${comments.slice(-3).map(c=>`<div class="nb-cmt-item"><span class="nb-cmt-who">${esc(c.who)}：</span>${esc(c.text)}</div>`).join('')}</div>`
+      :'';
+    const authorLabel=e.authorType==='ai'?'AI日记':'手写日记';
     const div=document.createElement('div');div.className='nb-entry';
-    div.innerHTML=`<div class="nb-entry-date">${dateStr}</div><div class="nb-entry-body">${esc(e.body)}</div>`;
+    div.innerHTML=`<div class="nb-entry-date">${dateStr}</div><div class="nb-entry-body">${esc(e.body)}</div><div class="nb-entry-meta"><span>${authorLabel}</span><span>${comments.length} 条评论</span></div>${commentsHtml}<button type="button" class="nb-cmt-btn">💬 评论这篇日记</button>`;
+    const cmtBtn=div.querySelector('.nb-cmt-btn');
+    if(cmtBtn)cmtBtn.onclick=(ev)=>{ev.stopPropagation();addNotebookComment(e.id);};
     div.onclick=()=>openNbEditor(idx);list.appendChild(div);
   });
 }
-function addNotebookEntry(){openNbEditor(null);}
+async function addNotebookEntry(){
+  await generateNotebookEntryByAI();
+}
+async function generateNotebookEntryByAI(){
+  if(!_nbCharId)return;
+  if(!S.settings.apiKey){toast('请先在设置里填写 API Key');openGlobalSettings();return;}
+  ensureNotebookDefaults(_nbCharId);
+  const char=S.chars[_nbCharId]||{};
+  const name=char.remark||char.name||'TA';
+  const persona=(char.personalities||[]).join('、')||'温柔、细腻';
+  const todayChat=getTodayChatSummary(_nbCharId);
+  const now=new Date();
+  const dateLabel=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const prompt=`你正在扮演 ${name}。你的性格标签：${persona}。\n请以第一人称写一篇“今天的日记”，用于私密日记本展示。\n要求：\n1) 以今天与用户的聊天内容为核心，体现情绪和关系变化；\n2) 文风要符合该角色人设；\n3) 160~260字；\n4) 不要使用标题，不要列表，不要输出解释，只输出日记正文。\n\n今天日期：${dateLabel}\n今天的聊天上下文：\n${todayChat}`;
+  toast('✍️ 正在生成今日日记…');
+  try{
+    const chat=S.chats[_nbCharId]||{messages:[]};
+    const raw=await callChatAPI(_nbCharId,chat,prompt,'note');
+    const body=String(raw||'').trim();
+    if(!body){toast('生成失败：内容为空');return;}
+    S.notebooks[_nbCharId].push({id:`nb_${Date.now()}`,ts:Date.now(),body,authorType:'ai',comments:[]});
+    save();
+    renderNotebook();
+    toast('✅ 已生成今天的日记');
+  }catch(err){
+    toast('❌ '+(err.message||'生成失败'));
+  }
+}
+function addNotebookComment(entryId){
+  if(!_nbCharId)return;
+  ensureNotebookDefaults(_nbCharId);
+  const entries=S.notebooks[_nbCharId]||[];
+  const target=entries.find(e=>e.id===entryId);
+  if(!target)return;
+  const text=prompt('写下你的评论：');
+  if(text===null)return;
+  const clean=String(text).trim();
+  if(!clean){toast('评论不能为空');return;}
+  if(!Array.isArray(target.comments))target.comments=[];
+  target.comments.push({id:`nbc_${Date.now()}`,who:S.myProfile.name||'我',text:clean,ts:Date.now()});
+  save();
+  renderNotebook();
+  toast('💬 评论已发布');
+}
 function openNbEditor(idx){
   _nbEditIdx=idx;
+  ensureNotebookDefaults(_nbCharId);
   const entries=(S.notebooks||{})[_nbCharId]||[];
   const e=idx!==null?entries[idx]:null;
   const now=new Date();
@@ -4264,9 +4795,9 @@ function openNbEditor(idx){
 function closeNbEditor(){document.getElementById('nb-editor').style.display='none';_nbEditIdx=null;}
 function saveNbEntry(){
   const body=document.getElementById('nb-editor-body').value.trim();if(!body)return;
-  if(!S.notebooks)S.notebooks={};if(!S.notebooks[_nbCharId])S.notebooks[_nbCharId]=[];
+  ensureNotebookDefaults(_nbCharId);
   if(_nbEditIdx!==null){S.notebooks[_nbCharId][_nbEditIdx].body=body;}
-  else{S.notebooks[_nbCharId].push({ts:Date.now(),body});}
+  else{S.notebooks[_nbCharId].push({id:`nb_${Date.now()}`,ts:Date.now(),body,authorType:'user',comments:[]});}
   save();closeNbEditor();renderNotebook();
 }
 
@@ -4570,7 +5101,7 @@ function expMemory(target){
   if(target==='all'){dlFile('memory-all.txt',S.memory);toast('已导出全部记忆');}
   else{const chat=S.chats[target];const char=S.chars[target];const name=char?.remark||char?.name||target;dlFile(`memory-${name}.txt`,chat?.chatMem||'（无总结记忆）');toast(`已导出 ${name} 的记忆`);}
 }
-function exportAllData(){dlFile('aichat-export.json',JSON.stringify({exportedAt:new Date().toISOString(),settings:{...S.settings,apiKey:'[HIDDEN]'},chars:S.chars,chats:S.chats,memory:S.memory,together:S.together,moments:S.moments,guestbook:S.guestbook,messageFavorites:S.messageFavorites,myProfile:S.myProfile},null,2));toast('📦 全部数据已导出');}
+function exportAllData(){dlFile('aichat-export.json',JSON.stringify({exportedAt:new Date().toISOString(),settings:{...S.settings,apiKey:'[HIDDEN]'},chars:S.chars,chats:S.chats,relations:S.relations,groupChats:S.groupChats,memory:S.memory,together:S.together,moments:S.moments,guestbook:S.guestbook,notebooks:S.notebooks,messageFavorites:S.messageFavorites,myProfile:S.myProfile},null,2));toast('📦 全部数据已导出');}
 
 
 // ============================================================
