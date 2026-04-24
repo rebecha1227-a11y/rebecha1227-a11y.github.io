@@ -11,11 +11,11 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --pk:#5B7B6A;--pkl:#7A9B8A;--pkp:#F5F3EF;--pkb:#D4CFC7;--pkd:#4A6B5A;
-  --rose:#EDE9E3;--lav:#F0EDE7;
+  --rose:#E2EBE6;--lav:#EDF3EF;
   --bfrom:#5B7B6A;--bto:#5B7B6A;--bai:#FAFAF7;
   --bg:#F5F3EF;--white:#FAFAF7;--black:#2C2C2C;--gray:#8A8A8A;--gl:#C8C4BC;
   --red:#C75450;--grn:#5B7B6A;--ts:#B0ADA6;
-  --thbg:#F0EDE7;--thbd:#C8C4BC;--thc:#5B7B6A;
+  --thbg:#EDF3EF;--thbd:#C8C4BC;--thc:#5B7B6A;
   --rb:14px;--font:'Space Grotesk','IBM Plex Sans','Noto Sans SC',sans-serif;
   --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
   --sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);
@@ -126,7 +126,7 @@ body.chat-open #tabbar{display:none}
 /* ===== CHAT VIEW ===== */
 #chat-view{position:fixed;inset:0;z-index:3000;display:none;flex-direction:column;background:var(--white)}
 #chat-view.open{display:flex}
-#cv-hdr{padding:calc(10px + var(--st)) 12px 10px;background:rgba(255,245,248,0.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1.5px solid var(--pkb);display:flex;align-items:center;gap:10px;flex-shrink:0;position:relative;z-index:2}
+#cv-hdr{padding:calc(10px + var(--st)) 12px 10px;background:rgba(240,246,243,0.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1.5px solid var(--pkb);display:flex;align-items:center;gap:10px;flex-shrink:0;position:relative;z-index:2}
 #cv-back{font-size:22px;color:var(--pk);background:none;border:none;cursor:pointer;padding:4px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
 #cv-av{width:36px;height:36px;border-radius:50%;background:var(--pk);display:flex;align-items:center;justify-content:center;font-size:17px;overflow:hidden;border:2px solid var(--pkb);flex-shrink:0;cursor:pointer}
 #cv-av img{width:100%;height:100%;object-fit:cover}
@@ -239,7 +239,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 @keyframes bd{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-6px);opacity:1}}
 
 /* INPUT */
-#cv-inp{padding:9px 12px;padding-bottom:calc(9px + var(--sb));background:rgba(255,245,248,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1.5px solid var(--pkb);display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+#cv-inp{padding:9px 12px;padding-bottom:calc(9px + var(--sb));background:rgba(240,246,243,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1.5px solid var(--pkb);display:flex;flex-direction:column;gap:8px;flex-shrink:0}
 #cv-inp-row{display:flex;align-items:flex-end;gap:8px}
 #inp-wrap{flex:1;background:var(--white);border-radius:22px;border:1.5px solid var(--pkb);display:flex;align-items:flex-end;padding:8px 12px;gap:6px;box-shadow:0 2px 8px rgba(91,123,106,.08);transition:border-color .2s}
 #inp-wrap:focus-within{border-color:var(--pk)}
@@ -248,11 +248,11 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 .iab{background:none;border:none;cursor:pointer;font-size:20px;color:var(--pkl);padding:0;line-height:1;flex-shrink:0;-webkit-tap-highlight-color:transparent}
 .iab:active{transform:scale(1.16);color:var(--pk)}
 #send-btn{width:38px;height:38px;border-radius:50%;background:var(--pk);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;flex-shrink:0;box-shadow:0 3px 10px rgba(91,123,106,.35);transition:all .2s;-webkit-tap-highlight-color:transparent}
-#send-btn:disabled{background:#E8D5DC;box-shadow:none}
+#send-btn:disabled{background:#C8D6CF;box-shadow:none}
 #send-btn:not(:disabled):active{transform:scale(.93)}
 #group-chat-view{position:fixed;inset:0;z-index:3200;display:none;flex-direction:column;background:var(--white)}
 #group-chat-view.open{display:flex}
-#gcv-hdr{padding:calc(10px + var(--st)) 12px 10px;background:rgba(255,245,248,.94);border-bottom:1.5px solid var(--pkb);display:flex;align-items:center;gap:10px}
+#gcv-hdr{padding:calc(10px + var(--st)) 12px 10px;background:rgba(240,246,243,.94);border-bottom:1.5px solid var(--pkb);display:flex;align-items:center;gap:10px}
 #gcv-back{font-size:22px;color:var(--pk);background:none;border:none;cursor:pointer;padding:4px;min-width:44px;min-height:44px}
 #gcv-title{font-size:16px;font-weight:800;color:var(--black);flex:1}
 #gcv-sub{font-size:12px;color:var(--gray);margin-top:2px}
@@ -398,8 +398,8 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 .mcls{width:28px;height:28px;border-radius:50%;background:rgba(91,123,106,.12);border:none;cursor:pointer;font-size:13px;color:var(--pk);display:flex;align-items:center;justify-content:center;font-weight:700;-webkit-tap-highlight-color:transparent}
 .mcls:active{background:rgba(91,123,106,.22)}
 .mbody{padding:16px 18px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1}
-.mfoot{padding:12px 18px;border-top:1.5px solid var(--pkb);display:flex;gap:8px;justify-content:flex-end;background:#FDFAFB;flex-shrink:0}
-.tabs{display:flex;gap:3px;background:#F8EFF3;padding:4px;border-radius:13px;margin-bottom:16px}
+.mfoot{padding:12px 18px;border-top:1.5px solid var(--pkb);display:flex;gap:8px;justify-content:flex-end;background:var(--white);flex-shrink:0}
+.tabs{display:flex;gap:3px;background:#E8EDEA;padding:4px;border-radius:13px;margin-bottom:16px}
 .tbtn{flex:1;padding:7px 4px;border:none;background:none;border-radius:10px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;color:var(--gray);transition:all .2s;-webkit-tap-highlight-color:transparent}
 .tbtn.on{background:var(--white);color:var(--pk);box-shadow:0 2px 6px rgba(91,123,106,.15)}
 .tpanel{display:none}.tpanel.on{display:block}
@@ -413,8 +413,8 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 .btn{padding:10px 16px;border-radius:12px;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;border:none;-webkit-tap-highlight-color:transparent}
 .btn:active{transform:scale(.97)}
 .btn-p{background:var(--pk);color:#fff;box-shadow:0 4px 12px rgba(91,123,106,.3)}
-.btn-s{background:#F0E8EC;color:var(--pk)}
-.btn-s:active{background:#E8D8E0}
+.btn-s{background:#E2EBE6;color:var(--pk)}
+.btn-s:active{background:#D4E2DA}
 .btn-d{background:var(--red);color:#fff}
 .chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
 .chip{padding:6px 12px;border-radius:20px;background:var(--rose);border:1.5px solid var(--pkb);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
@@ -493,7 +493,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 /* CHAT SETTINGS PANEL */
 #chat-settings-panel{position:fixed;inset:0;z-index:3600;display:none;flex-direction:column;background:var(--white)}
 #chat-settings-panel.open{display:flex}
-.csp-hdr{padding:calc(12px + var(--st)) 16px 12px;background:rgba(255,245,248,.94);backdrop-filter:blur(20px);border-bottom:1.5px solid var(--pkb);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.csp-hdr{padding:calc(12px + var(--st)) 16px 12px;background:rgba(240,246,243,.94);backdrop-filter:blur(20px);border-bottom:1.5px solid var(--pkb);display:flex;align-items:center;gap:10px;flex-shrink:0}
 .csp-back{font-size:22px;color:var(--pk);background:none;border:none;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
 .csp-title{font-size:17px;font-weight:800;color:var(--black);flex:1}
 .csp-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px}
@@ -512,9 +512,9 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 .ci-pin{font-size:13px;margin-left:4px;color:var(--pk)}
 .ci.pinned .ci-name::after{content:' 📌';font-size:11px}
 .ci-ctx-menu{position:fixed;z-index:9999;background:#fff;border-radius:14px;box-shadow:0 4px 24px rgba(0,0,0,.18);overflow:hidden;min-width:160px;font-size:15px}
-.ci-ctx-item{padding:12px 20px;cursor:pointer;border-bottom:1px solid #f5f0f3}
+.ci-ctx-item{padding:12px 20px;cursor:pointer;border-bottom:1px solid #EAEDEB}
 .ci-ctx-item:last-child{border-bottom:none}
-.ci-ctx-item:active{background:#f9f0f5}
+.ci-ctx-item:active{background:#EDF3EF}
 .gs-search-btn{background:none;border:none;font-size:18px;cursor:pointer;padding:4px 8px;-webkit-tap-highlight-color:transparent}
 #global-search-results .gs-res-item{padding:10px 14px;border-bottom:1px solid var(--pkb);cursor:pointer}
 #global-search-results .gs-res-item:active{background:var(--rose)}
@@ -639,7 +639,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 
       <!-- Guestbook Entry Card -->
       <!-- Feed -->
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:0 14px 8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 14px 18px">
         <div style="font-size:14px;font-weight:800;color:var(--black)">动态</div>
         <button class="btn btn-p" onclick="openComposeMoment()" style="padding:7px 14px;font-size:13px">+ 发动态</button>
       </div>
@@ -668,11 +668,11 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
         <div class="settings-group">
           <div class="settings-group-title">聊天</div>
           <div class="settings-item" onclick="openBubbleSettings()">
-            <div class="si-left"><div class="si-icon" style="background:#EDE9E3"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div class="si-label">气泡样式设置</div></div>
+            <div class="si-left"><div class="si-icon" style="background:var(--rose)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div class="si-label">气泡样式设置</div></div>
             <div class="si-right"><span id="cur-bubble-name">默认粉</span><span class="si-arrow">›</span></div>
           </div>
           <div class="settings-item" onclick="openAppearanceModal()">
-            <div class="si-left"><div class="si-icon" style="background:#EDE9E3"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div class="si-label">外观 / 壁纸</div></div>
+            <div class="si-left"><div class="si-icon" style="background:var(--rose)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div class="si-label">外观 / 壁纸</div></div>
             <div class="si-right"><span class="si-arrow">›</span></div>
           </div>
         </div>
@@ -680,7 +680,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
         <div class="settings-group">
           <div class="settings-group-title">云端</div>
           <div class="settings-item" onclick="openCloudSyncModal()">
-            <div class="si-left"><div class="si-icon" style="background:#EDE9E3"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg></div><div class="si-label">Supabase 云端同步</div></div>
+            <div class="si-left"><div class="si-icon" style="background:var(--rose)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg></div><div class="si-label">Supabase 云端同步</div></div>
             <div class="si-right"><span id="cloud-sync-badge" style="font-size:12px;color:var(--pk);font-weight:700;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span><span class="si-arrow">›</span></div>
           </div>
         </div>
@@ -688,15 +688,15 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
         <div class="settings-group">
           <div class="settings-group-title">数据</div>
           <div class="settings-item" onclick="openMemoryModal()">
-            <div class="si-left"><div class="si-icon" style="background:#EDE9E3"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 2a5 5 0 0 1 5 5v1a5 5 0 0 1-5 5 5 5 0 0 1-5-5V7a5 5 0 0 1 5-5z"/><path d="M2 20c0-4 4-7 10-7s10 3 10 7"/></svg></div><div class="si-label">全局记忆管理</div></div>
+            <div class="si-left"><div class="si-icon" style="background:var(--rose)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 2a5 5 0 0 1 5 5v1a5 5 0 0 1-5 5 5 5 0 0 1-5-5V7a5 5 0 0 1 5-5z"/><path d="M2 20c0-4 4-7 10-7s10 3 10 7"/></svg></div><div class="si-label">全局记忆管理</div></div>
             <div class="si-right"><span class="si-arrow">›</span></div>
           </div>
           <div class="settings-item" onclick="openFavoritesModal()">
-            <div class="si-left"><div class="si-icon" style="background:#EDE9E3"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="si-label">收藏消息</div></div>
+            <div class="si-left"><div class="si-icon" style="background:var(--rose)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="si-label">收藏消息</div></div>
             <div class="si-right"><span class="si-arrow">›</span></div>
           </div>
           <div class="settings-item" onclick="openExportModal()">
-            <div class="si-left"><div class="si-icon" style="background:#EDE9E3"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div class="si-label">导出数据</div></div>
+            <div class="si-left"><div class="si-icon" style="background:var(--rose)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div class="si-label">导出数据</div></div>
             <div class="si-right"><span class="si-arrow">›</span></div>
           </div>
         </div>
@@ -704,7 +704,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
         <div class="settings-group">
           <div class="settings-group-title">AI 设置</div>
           <div class="settings-item" onclick="openGlobalSettings()">
-            <div class="si-left"><div class="si-icon" style="background:#EDE9E3"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><div class="si-label">API & 全局设定</div></div>
+            <div class="si-left"><div class="si-icon" style="background:var(--rose)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--pk)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><div class="si-label">API & 全局设定</div></div>
             <div class="si-right"><span class="si-arrow">›</span></div>
           </div>
         </div>
@@ -1350,7 +1350,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
 
 <!-- ===== GUESTBOOK PAGE ===== -->
 <div id="guestbook-page" style="position:fixed;inset:0;z-index:450;display:none;flex-direction:column;background:var(--bg)">
-  <div style="padding:calc(12px + var(--st)) 16px 12px;background:rgba(255,245,248,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1.5px solid var(--pkb);display:flex;align-items:center;gap:10px;flex-shrink:0">
+  <div style="padding:calc(12px + var(--st)) 16px 12px;background:rgba(240,246,243,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1.5px solid var(--pkb);display:flex;align-items:center;gap:10px;flex-shrink:0">
     <button type="button" onclick="closeGuestbookPage()" style="font-size:22px;color:var(--pk);background:none;border:none;cursor:pointer;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent">‹</button>
     <div style="flex:1;font-size:18px;font-weight:800;color:var(--black);text-align:center">📌 留言板</div>
     <button type="button" onclick="openGuestbookPickFriend()" style="background:var(--pk);color:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent">✨ 邀请</button>
@@ -4332,7 +4332,8 @@ async function callAPIRaw(prompt,opts={}){
     throw new Error(er.error?.message||`HTTP ${resp.status}`);
   }
   const data=await resp.json();
-  const t=String(extractAPIChoiceText(data.choices?.[0])||'').trim();
+  const rawMsg=data.choices?.[0]?.message||{};
+  const t=String(rawMsg.content||'').replace(/<think>[\s\S]*?<\/think>/gi,'').replace(/<thinking>[\s\S]*?<\/thinking>/gi,'').trim();
   if(!t)throw new Error('模型未返回正文，请检查API Key是否正确');
   return t.replace(/^(["「『【])+|(["」』】])+$/g,'').trim();
 }
@@ -4469,7 +4470,7 @@ function renderGuestbook(){
               ? `<div class="gb-reply" style="margin-top:6px">我回复：${esc(g.reply)}</div>`
               : `<div class="gb-reply" onclick="openGbReply('${g.id}')" style="cursor:pointer;margin-top:6px">点击回复…</div>`}
             ${g.charReply
-              ? `<div class="gb-reply" style="margin-top:6px;background:#FFF5F8;border:1px solid var(--pkb)">${charName} 回复我：${esc(g.charReply)}</div>`
+              ? `<div class="gb-reply" style="margin-top:6px;background:#EDF3EF;border:1px solid var(--pkb)">${charName} 回复我：${esc(g.charReply)}</div>`
               : ''}
           </div>
         </div>
