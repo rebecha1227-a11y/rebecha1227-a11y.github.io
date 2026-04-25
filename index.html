@@ -1049,7 +1049,7 @@ body.bub-imsg .mrow.assistant .bubble::after{background:#E9E9EB}
       <div class="tpanel on" id="gs-tab-api">
         <div class="fg"><label class="fl">API Key</label>
           <div class="akwrap"><input class="fi" type="password" id="ak-inp" placeholder="sk-..."><button class="aktog" onclick="togAK()">👁</button></div>
-          <div class="fhint">默认仅存本机。若你在「云端同步」登录 Supabase，整包数据会同步到你的云端（含 Key，仅你的账号可读写）🔒</div>
+          <div class="fhint">默认仅存本机。登录 Supabase 后会同步聊天、记忆和角色资料，但不会上传 API Key；换设备时需要你重新填写一次 🔒</div>
         </div>
         <div class="fg"><label class="fl">API Base URL</label><input class="fi" type="text" id="ab-inp" value="https://api.deepseek.com/v1"></div>
         <div class="fg">
@@ -1546,6 +1546,7 @@ let _idbPendingPayload = '';
 let _idbLastSavedPayload = '';
 let _activeStreamCtx = null;
 let _streamBubbleState = null;
+let _chatReqState = {};
 
 const AICHAT_DB_NAME = 'aichat-db';
 const AICHAT_DB_VERSION = 2;
@@ -1623,6 +1624,30 @@ const DEFAULT_MODEL_OPTIONS = ['deepseek-reasoner','deepseek-chat','gpt-4.1-mini
 
 function genId(prefix){
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+}
+function getChatReqState(charId){
+  if(!charId)return null;
+  if(!_chatReqState[charId])_chatReqState[charId]={running:false,abortCtrl:null,reqId:null};
+  return _chatReqState[charId];
+}
+function isChatGenerating(charId){
+  return !!getChatReqState(charId)?.running;
+}
+function setChatGenerating(charId,running,meta={}){
+  if(!charId)return;
+  const state=getChatReqState(charId);
+  state.running=!!running;
+  state.abortCtrl=running?(meta.abortCtrl||state.abortCtrl||null):null;
+  state.reqId=running?(meta.reqId||state.reqId||null):null;
+  if(!running){
+    state.abortCtrl=null;
+    state.reqId=null;
+  }
+  if(S.currentChatId===charId){
+    S.streaming=state.running;
+    const stopBtn=document.getElementById('stop-gen-btn');
+    if(stopBtn)stopBtn.style.display=state.running?'inline-block':'none';
+  }
 }
 
 const BUILTIN_BUBBLE_PRESETS = [
@@ -1940,6 +1965,11 @@ async function load(){
     console.error(e);
   }
 }
+function sanitizeSettingsForCloud(settings){
+  const next={...(settings||{})};
+  delete next.apiKey;
+  return next;
+}
 function _payload(){return JSON.stringify({chats:S.chats,chars:S.chars,relations:S.relations,groupChats:S.groupChats,settings:S.settings,memory:S.memory,together:S.together,moments:S.moments,guestbook:S.guestbook,notebooks:S.notebooks,messageFavorites:S.messageFavorites,myProfile:S.myProfile,drafts:S.drafts});}
 function saveTryRaw(){
   const payload=_payload();
@@ -2005,7 +2035,7 @@ function save(){
 // SUPABASE 云端同步
 // ============================================================
 function getPayloadData(){
-  return{chats:S.chats,chars:S.chars,relations:S.relations,groupChats:S.groupChats,settings:S.settings,memory:S.memory,together:S.together,moments:S.moments,guestbook:S.guestbook,notebooks:S.notebooks,messageFavorites:S.messageFavorites,myProfile:S.myProfile};
+  return{chats:S.chats,chars:S.chars,relations:S.relations,groupChats:S.groupChats,settings:sanitizeSettingsForCloud(S.settings),memory:S.memory,together:S.together,moments:S.moments,guestbook:S.guestbook,notebooks:S.notebooks,messageFavorites:S.messageFavorites,myProfile:S.myProfile};
 }
 function applyPayloadFromObject(p){
   if(!p||typeof p!=='object')return;
@@ -2013,7 +2043,7 @@ function applyPayloadFromObject(p){
   S.chars=p.chars||{};
   S.relations=Array.isArray(p.relations)?p.relations:[];
   S.groupChats=Array.isArray(p.groupChats)?p.groupChats:[];
-  S.settings={...S.settings,...(p.settings||{})};
+  S.settings={...S.settings,...sanitizeSettingsForCloud(p.settings||{})};
   S.memory=p.memory||'';
   S.together={...S.together,...(p.together||{})};
   S.moments=p.moments||[];
@@ -2480,7 +2510,8 @@ function openChat(charId){
   updateMsgTabBadge();
   renderMsgs();
   loadDraftForCurrentChat();
-  showTyping(false);
+  S.streaming=isChatGenerating(charId);
+  showTyping(isChatGenerating(charId),charId);
   document.body.classList.add('chat-open');
   document.getElementById('chat-view').classList.add('open');
 }
@@ -2494,6 +2525,8 @@ function closeChat(){
   clearQuoteDraft();
   clearMultiSelectState();
   S.currentChatId=null;
+  S.streaming=false;
+  showTyping(false);
   renderChatList();
 }
 
@@ -2779,24 +2812,27 @@ async function regenerateActiveMessage(){
   const act=getActiveMessage();if(!act)return;
   if(act.msg.role!=='assistant')return;
   const chat=S.chats[act.chatId];if(!chat)return;
-  if(S.streaming){toast('正在生成中，请稍候');return;}
+  if(isChatGenerating(act.chatId)){toast('正在生成中，请稍候');return;}
   closeMod('msg-action-modal');
   const idx=chat.messages.findIndex(m=>m.id===act.msg.id);
   if(idx===-1)return;
   chat.messages.splice(idx);
   const streamCtx={chatId:act.chatId,reqId:genId('stream')};
+  const ctrl=new AbortController();
   _activeStreamCtx=streamCtx;
-  S.streaming=true;renderMsgs();showTyping(true);
+  setChatGenerating(act.chatId,true,{abortCtrl:ctrl,reqId:streamCtx.reqId});
+  renderMsgs();showTyping(true,act.chatId);
   try{
-    const res=await callChatAPI(act.chatId,chat,null,'reply',(c,t)=>updateStreamingBubble(streamCtx,c,t));
-    showTyping(false);
+    const res=await callChatAPI(act.chatId,chat,null,'reply',(c,t)=>updateStreamingBubble(streamCtx,c,t),ctrl);
+    showTyping(false,act.chatId);
     await appendAssistantResponse(act.chatId,chat,res,{source:'reply',streamReqId:streamCtx.reqId});
   }catch(err){
     if(err.name==='AbortError'){toast('已停止生成');}
     else{toast('❌ '+err.message);}
   }
   renderMsgs();renderChatList();
-  showTyping(false);S.streaming=false;S.abortCtrl=null;
+  showTyping(false,act.chatId);
+  setChatGenerating(act.chatId,false);
   clearActiveStreamCtx(streamCtx.reqId);
   if(!save())toast('⚠️ 未能保存');
 }
@@ -2930,22 +2966,25 @@ async function confirmEditAndRegen(){
   if(!newText){toast('内容不能为空');return;}
   closeMod('msg-edit-modal');
   const chat=S.chats[act.chatId];if(!chat)return;
-  if(S.streaming){toast('正在生成中，请稍候');return;}
+  if(isChatGenerating(act.chatId)){toast('正在生成中，请稍候');return;}
   const idx=chat.messages.findIndex(m=>m.id===act.msgId);
   if(idx===-1)return;
   chat.messages[idx].content=newText;
   chat.messages.splice(idx+1);
   const editCharId=act.chatId;
-  S.streaming=true;renderMsgs();showTyping(true);
+  const ctrl=new AbortController();
+  setChatGenerating(editCharId,true,{abortCtrl:ctrl});
+  renderMsgs();showTyping(true,editCharId);
   try{
-    const res=await callChatAPI(editCharId,chat,null,'reply',()=>{});
+    const res=await callChatAPI(editCharId,chat,null,'reply',()=>{},ctrl);
     await appendAssistantResponse(editCharId,chat,res,{source:'reply'});
   }catch(err){
     if(err.name==='AbortError'){toast('已停止生成');}
     else{toast('❌ '+err.message);}
     renderMsgs();
   }
-  showTyping(false);S.streaming=false;S.abortCtrl=null;
+  showTyping(false,editCharId);
+  setChatGenerating(editCharId,false);
   save();
 }
 function getUserTimezone(){
@@ -2969,7 +3008,7 @@ function getNowParts(tz,ts=Date.now()){
 function getBeijingNowParts(ts){return getNowParts(getUserTimezone(),ts);}
 
 async function sendMsg(){
-  if(S.streaming||!S.currentChatId)return;
+  if(!S.currentChatId||isChatGenerating(S.currentChatId))return;
   const inp=document.getElementById('user-input');
   const text=inp.value.trim();if(!text)return;
   if(!S.settings.apiKey){toast('请先在设置→API 填写 API Key');openGlobalSettings();return;}
@@ -2982,11 +3021,12 @@ async function sendMsg(){
   if(draft){um.quoteText=draft.text;um.quoteAuthor=draft.author;}
   const sendCharId=S.currentChatId;
   const streamCtx={chatId:sendCharId,reqId:genId('stream')};
+  const ctrl=new AbortController();
   _activeStreamCtx=streamCtx;
-  chat.messages.push(um);renderMsgs();S.streaming=true;showTyping(true);
+  chat.messages.push(um);renderMsgs();setChatGenerating(sendCharId,true,{abortCtrl:ctrl,reqId:streamCtx.reqId});showTyping(true,sendCharId);
   clearQuoteDraft();
   try{
-    const res=await callChatAPI(sendCharId,chat,null,'reply',(c,t)=>updateStreamingBubble(streamCtx,c,t));
+    const res=await callChatAPI(sendCharId,chat,null,'reply',(c,t)=>updateStreamingBubble(streamCtx,c,t),ctrl);
     um.read=true;
     await appendAssistantResponse(sendCharId,chat,res,{source:'reply',streamReqId:streamCtx.reqId});
     if(chat.autoSum) await checkAutoSum(chat);
@@ -2995,13 +3035,15 @@ async function sendMsg(){
     if(err.name==='AbortError'){toast('已停止生成');}
     else{toast('❌ '+err.message);}
     renderMsgs();
-    showTyping(false);S.streaming=false;S.abortCtrl=null;
+    showTyping(false,sendCharId);
+    setChatGenerating(sendCharId,false);
     clearActiveStreamCtx(streamCtx.reqId);
     return;
   }
   if(!save())toast('⚠️ 本条回复已显示，但未能写入本地（存储空间不足）。请勿刷新页面，先导出备份或按提示清理后再发消息。');
   renderMsgs();renderChatList();
-  showTyping(false);S.streaming=false;
+  showTyping(false,sendCharId);
+  setChatGenerating(sendCharId,false);
   clearActiveStreamCtx(streamCtx.reqId);
 }
 
@@ -3057,7 +3099,7 @@ function buildSystemPrompt(charId,chat,purpose){
   parts.push('【思考链规则】在思考链（thinking/reasoning）中，必须使用中文，以第一人称视角表达你此刻的真实感受和心理活动。每次思考时都要问自己：我现在感受到了什么？我的情绪是什么？着重表达内心的情绪波动和心理活动，模拟真实的意识流转。禁止使用”用户”、”他们”等第三人称称呼，要直接用对方的名字或昵称。保持叙事流畅自然，避免使用格式化的数字序号（如”1. 2. 3.”）。思考链应该像内心独白，而不是分析报告。');
   return parts.join('\n\n')||'你是温柔体贴的AI伴侣，请用中文回复。';
 }
-async function callChatAPI(charId,chat,customPrompt,purpose='reply',onChunk){
+async function callChatAPI(charId,chat,customPrompt,purpose='reply',onChunk,abortCtrl){
   const{apiKey,apiBase,model,temperature,maxTokens}=S.settings;
   const sp=buildSystemPrompt(charId,chat,purpose);
   const hist=(chat.messages||[]).slice(-100).filter(m=>!m.recalled).map(m=>({role:m.role,content:getMessagePlainText(m,charId)}));
@@ -3088,7 +3130,7 @@ async function callChatAPI(charId,chat,customPrompt,purpose='reply',onChunk){
     ].join('\n');
     msgs.push({role:'system',content:exact});
   }
-  const ctrl=new AbortController();S.abortCtrl=ctrl;
+  const ctrl=abortCtrl||new AbortController();
   const resp=await fetch(`${apiBase}/chat/completions`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model,messages:msgs,temperature:parseFloat(temperature)||1,max_tokens:parseInt(maxTokens)||4096,stream:!!onChunk}),signal:ctrl.signal});
   if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${resp.status}`);}
   if(!onChunk){
@@ -3206,7 +3248,7 @@ async function appendAssistantResponse(charId,chat,res,opts={}){
   const committed=(opts.streamReqId&&_streamBubbleState&&_streamBubbleState.reqId===opts.streamReqId)?(_streamBubbleState.committed||0):0;
   if(committed>0)parts=parts.slice(committed);
   for(let i=0;i<parts.length;i++){
-    if(i>0){showTyping(true);await new Promise(r=>setTimeout(r,650+Math.random()*550));}
+    if(i>0){showTyping(true,charId);await new Promise(r=>setTimeout(r,650+Math.random()*550));}
     chat.messages.push({
       id:genId('msg'),
       role:'assistant',
@@ -3219,7 +3261,7 @@ async function appendAssistantResponse(charId,chat,res,opts={}){
     const chatOpen=document.getElementById('chat-view')?.classList.contains('open');
     if(S.currentChatId===charId&&chatOpen){
       renderMsgs();
-      showTyping(i<parts.length-1);
+      showTyping(i<parts.length-1,charId);
     }
     else{chat.unread=(chat.unread||0)+1;updateMsgTabBadge();}
     if(i===parts.length-1){
@@ -3230,6 +3272,9 @@ async function appendAssistantResponse(charId,chat,res,opts={}){
 }
 async function maybeSendAutoMessage(charId){
   const chat=S.chats[charId];if(!chat||!chat.autoMsgEnabled||!S.settings.apiKey)return;
+  if(isChatGenerating(charId))return;
+  const chatOpen=document.getElementById('chat-view')?.classList.contains('open');
+  if(chatOpen&&S.currentChatId===charId)return;
   const every=Math.max(1,parseInt(chat.autoMsgEvery)||1);
   const interval=every*(chat.autoMsgUnit==='minute'?60000:3600000);
   const msgs=chat.messages||[];
@@ -3262,7 +3307,7 @@ function startAutoMessageLoop(){
   setTimeout(()=>{void runAutoMessageChecks();},12000);
 }
 async function runAutoMessageChecks(){
-  if(_autoMsgRunning||S.streaming||!S.settings.apiKey)return;
+  if(_autoMsgRunning||!S.settings.apiKey)return;
   _autoMsgRunning=true;
   try{
     for(const charId of Object.keys(S.chats||{})) await maybeSendAutoMessage(charId);
@@ -3271,14 +3316,17 @@ async function runAutoMessageChecks(){
   }
 }
 
-function showTyping(show){
+function showTyping(show,charId){
+  if(charId&&S.currentChatId&&charId!==S.currentChatId)return;
   document.getElementById('typ-ind').classList.toggle('show',show);
   const stopBtn=document.getElementById('stop-gen-btn');
-  if(stopBtn)stopBtn.style.display=(show&&S.streaming)?'inline-block':'none';
+  const activeId=S.currentChatId;
+  if(stopBtn)stopBtn.style.display=(show&&activeId&&isChatGenerating(activeId))?'inline-block':'none';
   scrollBot();
 }
 function stopGeneration(){
-  if(S.abortCtrl){S.abortCtrl.abort();S.abortCtrl=null;}
+  const state=getChatReqState(S.currentChatId);
+  if(state?.abortCtrl)state.abortCtrl.abort();
 }
 function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(!document.getElementById('send-btn').disabled)sendMsg();}}
 function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,110)+'px';}
@@ -3326,7 +3374,14 @@ function openCharProfile(charId){
   const days=Math.max(0,Math.floor((Date.now()-metDay.getTime())/86400000));
   document.getElementById('cp-days').textContent=days;
   document.getElementById('cp-msgs').textContent=(chat.messages||[]).length;
-  document.getElementById('cp-tags').innerHTML=(char.personalities||[]).map(t=>`<span class="cp-tag">${t}</span>`).join('');
+  const tagsWrap=document.getElementById('cp-tags');
+  tagsWrap.innerHTML='';
+  (char.personalities||[]).forEach(tag=>{
+    const chip=document.createElement('span');
+    chip.className='cp-tag';
+    chip.textContent=String(tag||'');
+    tagsWrap.appendChild(chip);
+  });
   document.getElementById('cp-persona').textContent=char.persona||'暂无介绍';
   document.getElementById('cp-persona-section').style.display=char.persona?'block':'none';
   renderProfileRelations(charId);
