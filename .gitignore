@@ -3,3 +3,5 @@ node_modules/
 HANDOVER*.md
 .bytro
 .playwright-mcp/
+.claude/
+/.claude/
